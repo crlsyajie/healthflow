@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Appointment Management - HealthFlow</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-danger">
+  <div class="container">
+    <a class="navbar-brand" href="/">HealthFlow</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="/admin/dashboard">Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" href="/admin/appointments">Appointments</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/admin/doctors">Doctors</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/admin/patients">Patients</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/admin/departments">Departments</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/admin/reports">Reports</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/admin/notifications">Notifications</a>
+        </li>
+      </ul>
+      <form th:action="@{/logout}" method="post" class="d-flex">
+        <button class="btn btn-outline-light" type="submit">Logout</button>
+      </form>
+    </div>
+  </div>
+</nav>
+
+<div class="container mt-4">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h1>Appointments Management</h1>
+      <p class="lead">View and manage all appointments in the system</p>
+    </div>
+    <div class="col-md-4 text-end">
+      <a href="#" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#newAppointmentModal">
+        <i class="bi bi-plus-circle"></i> Create Appointment
+      </a>
+    </div>
+  </div>
+
+  <!-- Alerts for success or error messages -->
+  <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+    <span th:text="${success}"></span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+    <span th:text="${error}"></span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+
+  <!-- Filter Controls -->
+  <div class="card mb-4">
+    <div class="card-header bg-secondary text-white">
+      <h5 class="mb-0">Filter Appointments</h5>
+    </div>
+    <div class="card-body">
+      <form action="/admin/appointments" method="get" class="row g-3">
+        <div class="col-md-4">
+          <label for="doctorId" class="form-label">Doctor</label>
+          <select class="form-select" id="doctorId" name="doctorId">
+            <option value="">All Doctors</option>
+            <option th:each="doctor : ${doctors}"
+                    th:value="${doctor.id}"
+                    th:text="${doctor.firstName + ' ' + doctor.lastName}"
+                    th:selected="${selectedDoctorId != null && selectedDoctorId == doctor.id}"></option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label for="departmentId" class="form-label">Department</label>
+          <select class="form-select" id="departmentId" name="departmentId">
+            <option value="">All Departments</option>
+            <option th:each="dept : ${departments}"
+                    th:value="${dept.id}"
+                    th:text="${dept.name}"
+                    th:selected="${selectedDepartmentId != null && selectedDepartmentId == dept.id}"></option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label for="date" class="form-label">Date</label>
+          <input type="date" class="form-control" id="date" name="date" th:value="${selectedDate}">
+        </div>
+        <div class="col-12 mt-3">
+          <button type="submit" class="btn btn-primary">Apply Filters</button>
+          <a href="/admin/appointments" class="btn btn-outline-secondary">Clear Filters</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Appointments Table -->
+  <div class="card">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">Appointments List</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-striped table-hover">
+          <thead>
+          <tr>
+            <th>ID</th>
+            <th>Patient</th>
+            <th>Doctor</th>
+            <th>Department</th>
+            <th>Date & Time</th>
+            <th>Duration</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:if="${appointments.empty}">
+            <td colspan="8" class="text-center">No appointments found</td>
+          </tr>
+          <tr th:each="appointment : ${appointments}">
+            <td th:text="${appointment.id}"></td>
+            <td>
+              <a th:href="@{/admin/patients/{id}(id=${appointment.patient.id})}"
+                 th:text="${appointment.patient.firstName + ' ' + appointment.patient.lastName}"></a>
+            </td>
+            <td>
+              <a th:href="@{/admin/doctors/{id}(id=${appointment.doctor.id})}"
+                 th:text="${appointment.doctor.firstName + ' ' + appointment.doctor.lastName}"></a>
+            </td>
+            <td th:text="${appointment.doctor.department != null ? appointment.doctor.department.name : 'N/A'}"></td>
+            <td th:text="${#temporals.format(appointment.appointmentTime, 'yyyy-MM-dd HH:mm')}"></td>
+            <td th:text="${appointment.durationMinutes + ' min'}"></td>
+            <td>
+                                    <span class="badge"
+                                          th:classappend="${appointment.status == T(com.example.healthflow.model.AppointmentStatus).SCHEDULED ? 'bg-warning' :
+                                                            appointment.status == T(com.example.healthflow.model.AppointmentStatus).COMPLETED ? 'bg-success' :
+                                                            appointment.status == T(com.example.healthflow.model.AppointmentStatus).CANCELED ? 'bg-danger' : 'bg-info'}"
+                                          th:text="${appointment.status}"></span>
+            </td>
+            <td>
+              <div class="btn-group btn-group-sm">
+                <button class="btn btn-primary view-btn" data-id="${appointment.id}">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn btn-warning edit-btn" data-id="${appointment.id}">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-danger delete-btn" data-id="${appointment.id}">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- New Appointment Modal -->
+<div class="modal fade" id="newAppointmentModal" tabindex="-1" aria-labelledby="newAppointmentModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="newAppointmentModalLabel">Create New Appointment</h5>
+        <button type="button" class="btn-close bg-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="appointmentForm" action="/admin/appointments/create" method="post" class="row g-3">
+          <div class="col-md-6">
+            <label for="patientId" class="form-label">Patient</label>
+            <select class="form-select" id="patientId" name="patientId" required>
+              <option value="">Select Patient</option>
+              <!-- Patient options would be populated dynamically with JavaScript -->
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label for="appointmentDoctorId" class="form-label">Doctor</label>
+            <select class="form-select" id="appointmentDoctorId" name="doctorId" required>
+              <option value="">Select Doctor</option>
+              <option th:each="doctor : ${doctors}"
+                      th:value="${doctor.id}"
+                      th:text="${doctor.firstName + ' ' + doctor.lastName + ' (' + (doctor.department != null ? doctor.department.name : 'No Department') + ')'}">
+              </option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label for="appointmentDate" class="form-label">Date</label>
+            <input type="date" class="form-control" id="appointmentDate" name="appointmentDate" required>
+          </div>
+          <div class="col-md-6">
+            <label for="appointmentTime" class="form-label">Time</label>
+            <input type="time" class="form-control" id="appointmentTime" name="appointmentTime" required>
+          </div>
+          <div class="col-md-6">
+            <label for="durationMinutes" class="form-label">Duration (minutes)</label>
+            <input type="number" class="form-control" id="durationMinutes" name="durationMinutes" value="30" min="10" max="120" required>
+          </div>
+          <div class="col-md-6">
+            <label for="status" class="form-label">Status</label>
+            <select class="form-select" id="status" name="status" required>
+              <option value="SCHEDULED">Scheduled</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="CANCELED">Canceled</option>
+              <option value="RESCHEDULED">Rescheduled</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label for="reason" class="form-label">Reason</label>
+            <input type="text" class="form-control" id="reason" name="reason">
+          </div>
+          <div class="col-12">
+            <label for="notes" class="form-label">Notes</label>
+            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-success" id="submitAppointmentBtn">Create Appointment</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="mt-5 py-3 bg-light">
+  <div class="container text-center">
+    <p class="mb-0">© 2023 HealthFlow Admin Panel. All rights reserved.</p>
+  </div>
+</footer>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  $(document).ready(function() {
+    // Get patients for the dropdown
+    $.getJSON('/api/admin/patients', function(data) {
+      var options = '';
+      $.each(data, function(index, patient) {
+        options += '<option value="' + patient.id + '">' + patient.firstName + ' ' + patient.lastName + '</option>';
+      });
+      $('#patientId').append(options);
+    });
+
+    // Submit form
+    $('#submitAppointmentBtn').click(function() {
+      // Combine date and time
+      var date = $('#appointmentDate').val();
+      var time = $('#appointmentTime').val();
+
+      // Add a hidden field with the combined date and time
+      $('<input>').attr({
+        type: 'hidden',
+        name: 'appointmentDateTime',
+        value: date + 'T' + time
+      }).appendTo('#appointmentForm');
+
+      // Submit the form
+      $('#appointmentForm').submit();
+    });
+
+    // View appointment details
+    $('.view-btn').click(function() {
+      var id = $(this).data('id');
+      window.location.href = '/admin/appointments/' + id;
+    });
+
+    // Edit appointment
+    $('.edit-btn').click(function() {
+      var id = $(this).data('id');
+      window.location.href = '/admin/appointments/' + id + '/edit';
+    });
+
+    // Delete appointment
+    $('.delete-btn').click(function() {
+      var id = $(this).data('id');
+      if (confirm('Are you sure you want to delete this appointment?')) {
+        $.post('/admin/appointments/' + id + '/delete', function() {
+          location.reload();
+        });
+      }
+    });
+  });
+</script>
+</body>
+</html>

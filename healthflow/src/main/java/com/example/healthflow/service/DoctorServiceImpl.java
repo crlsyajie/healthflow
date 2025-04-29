@@ -1,0 +1,208 @@
+package com.example.healthflow.service;
+
+import com.example.healthflow.model.*;
+import com.example.healthflow.repository.AppointmentRepository;
+import com.example.healthflow.repository.DoctorRepository;
+import com.example.healthflow.repository.PatientRepository;
+import com.example.healthflow.repository.UserRepository;
+import com.example.healthflow.repository.DepartmentRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Service
+public class DoctorServiceImpl implements DoctorService {
+
+    @Autowired
+    private DoctorRepository doctorRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PatientRepository patientRepository;
+
+    @Autowired
+    private AppointmentRepository appointmentRepository;
+
+    @Autowired
+    private DepartmentRepository departmentRepository;
+
+    @Override
+    public Doctor getDoctorByUsername(String username) {
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            return null;
+        }
+        return doctorRepository.findByUser(user);
+    }
+
+    @Override
+    public Doctor getDoctorById(Long id) {
+        return doctorRepository.findById(id).orElse(null);
+    }
+
+    @Override
+    public List<Doctor> getAllDoctors() {
+        return doctorRepository.findAll();
+    }
+
+    @Override
+    public List<Doctor> getDoctorsByDepartment(Long departmentId) {
+        return doctorRepository.findByDepartmentId(departmentId);
+    }
+
+    @Override
+    @Transactional
+    public boolean updateDoctorDepartment(Long doctorId, Long departmentId) {
+        Doctor doctor = doctorRepository.findById(doctorId).orElse(null);
+        Department department = departmentRepository.findById(departmentId).orElse(null);
+
+        if (doctor == null || department == null) {
+            return false;
+        }
+
+        doctor.setDepartment(department);
+        doctorRepository.save(doctor);
+        return true;
+    }
+
+    @Override
+    @Transactional
+    public boolean removeDoctor(Long id) {
+        Doctor doctor = doctorRepository.findById(id).orElse(null);
+        if (doctor == null) {
+            return false;
+        }
+
+        // Check if doctor has appointments (active or completed)
+        List<Appointment> activeAppointments = appointmentRepository.findByDoctorAndStatus(doctor, AppointmentStatus.SCHEDULED);
+        if (!activeAppointments.isEmpty()) {
+            return false; // Can't remove doctor with active appointments
+        }
+
+        // Option 1: Delete doctor and related records
+        doctorRepository.delete(doctor);
+
+        // Option 2: Just disable the doctor and user accounts (safer)
+        // User user = doctor.getUser();
+        // user.setEnabled(false);
+        // userRepository.save(user);
+
+        return true;
+    }
+
+    @Override
+    public List<Appointment> getTodaysAppointments(Doctor doctor) {
+        LocalDateTime today = LocalDate.now().atStartOfDay();
+        LocalDateTime tomorrow = today.plusDays(1);
+        return appointmentRepository.findDoctorAppointmentsForDay(doctor, today, tomorrow);
+    }
+
+    @Override
+    public List<Appointment> getAppointmentsForPeriod(Doctor doctor, LocalDate startDate, LocalDate endDate) {
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate.plusDays(1).atStartOfDay();
+        return appointmentRepository.findByDoctorAndAppointmentTimeBetween(doctor, startDateTime, endDateTime);
+    }
+
+    @Override
+    public List<Appointment> getPendingAppointments(Doctor doctor) {
+        LocalDateTime now = LocalDateTime.now();
+        return appointmentRepository.findByDoctorAndAppointmentTimeBetween(doctor, now, now.plusMonths(1)).stream()
+                .filter(appointment -> appointment.getStatus() == AppointmentStatus.SCHEDULED)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Patient getPatientDetails(Long patientId) {
+        return patientRepository.findById(patientId).orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public Appointment updateAppointmentStatus(Long appointmentId, AppointmentStatus status) {
+        Appointment appointment = appointmentRepository.findById(appointmentId).orElse(null);
+        if (appointment != null) {
+            appointment.setStatus(status);
+            return appointmentRepository.save(appointment);
+        }
+        return null;
+    }
+
+    @Override
+    public Map<LocalDate, List<Appointment>> getWeeklyCalendar(Doctor doctor) {
+        LocalDate today = LocalDate.now();
+        LocalDate endOfWeek = today.plusDays(6); // Get a week from today
+
+        return getCalendarMap(doctor, today, endOfWeek);
+    }
+
+    @Override
+    public Map<LocalDate, List<Appointment>> getMonthlyCalendar(Doctor doctor) {
+        LocalDate today = LocalDate.now();
+        LocalDate endOfMonth = today.plusMonths(1);
+
+        return getCalendarMap(doctor, today, endOfMonth);
+    }
+
+    private Map<LocalDate, List<Appointment>> getCalendarMap(Doctor doctor, LocalDate start, LocalDate end) {
+        List<Appointment> appointments = getAppointmentsForPeriod(doctor, start, end);
+
+        Map<LocalDate, List<Appointment>> calendar = new TreeMap<>();
+
+        // Initialize all dates in the range with empty lists
+        LocalDate currentDate = start;
+        while (!currentDate.isAfter(end)) {
+            calendar.put(currentDate, new ArrayList<>());
+            currentDate = currentDate.plusDays(1);
+        }
+
+        // Fill the calendar with appointments
+        for (Appointment appointment : appointments) {
+            LocalDate appointmentDate = appointment.getAppointmentTime().toLocalDate();
+            calendar.get(appointmentDate).add(appointment);
+        }
+
+        return calendar;
+    }
+
+    @Override
+    @Transactional
+    public void setAvailability(Doctor doctor, LocalDateTime startTime, LocalDateTime endTime, boolean available) {
+        // Implementation would depend on how availability is stored
+        // This could be implemented by creating slots or by using a separate availability entity
+        // For now, we'll leave this as a placeholder
+    }
+
+    @Override
+    public List<Appointment> getNotifications(Doctor doctor) {
+        LocalDateTime yesterday = LocalDateTime.now().minusDays(1);
+
+        // Get recent appointments
+        return appointmentRepository.findByDoctorAndAppointmentTimeBetween(doctor, yesterday, LocalDateTime.now().plusMonths(1))
+                .stream()
+                .filter(appointment -> {
+                    // New bookings created within the last 24 hours
+                    if (appointment.getCreatedAt() != null &&
+                            appointment.getCreatedAt().isAfter(yesterday) &&
+                            appointment.getStatus() == AppointmentStatus.SCHEDULED) {
+                        return true;
+                    }
+
+                    // Recently canceled appointments
+                    if (appointment.getStatus() == AppointmentStatus.CANCELED) {
+                        return true;
+                    }
+
+                    return false;
+                })
+                .collect(Collectors.toList());
+    }
+}

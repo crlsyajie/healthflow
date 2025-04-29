@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Appointment - HealthFlow</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="/">HealthFlow</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/patient/dashboard">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/patient/appointments">My Appointments</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/patient/doctors">Find Doctors</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/patient/profile">My Profile</a>
+                </li>
+            </ul>
+            <form th:action="@{/logout}" method="post" class="d-flex">
+                <button class="btn btn-outline-light" type="submit">Logout</button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/patient/dashboard">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="/patient/doctors">Find Doctors</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Book Appointment</li>
+                </ol>
+            </nav>
+
+            <h1>Book Appointment</h1>
+            <p class="lead">Schedule your appointment with a healthcare professional</p>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Doctor Information</h5>
+                </div>
+                <div class="card-body" id="doctorInfo">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p>Loading doctor information...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Appointment Details</h5>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/patient/appointment/book}" th:object="${appointment}" method="post">
+                        <input type="hidden" name="doctorId" th:value="${doctorId}" />
+
+                        <div class="mb-3">
+                            <label for="appointmentDate" class="form-label">Date</label>
+                            <input type="date" class="form-control" id="appointmentDate" name="appointmentDate" required min="2023-01-01">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="appointmentTime" class="form-label">Time</label>
+                            <select class="form-select" id="appointmentTime" name="appointmentTime" required disabled>
+                                <option value="">Select a date first</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="reason" class="form-label">Reason for Visit</label>
+                            <textarea class="form-control" id="reason" name="reason" rows="3" placeholder="Briefly describe your symptoms or the reason for your visit" th:field="*{reason}"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Additional Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="Any additional information you'd like the doctor to know" th:field="*{notes}"></textarea>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="agreeTerms" required>
+                            <label class="form-check-label" for="agreeTerms">
+                                I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">terms and conditions</a>
+                            </label>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary" id="bookButton" disabled>Book Appointment</button>
+                            <a href="/patient/doctors" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Terms and Conditions Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="termsModalLabel">Terms and Conditions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h6>Appointment Policy</h6>
+                <p>Please arrive 15 minutes before your scheduled appointment to complete any necessary paperwork.</p>
+
+                <h6>Cancellation Policy</h6>
+                <p>If you need to cancel or reschedule your appointment, please do so at least 24 hours in advance. Late cancellations or no-shows may result in a fee.</p>
+
+                <h6>Privacy Policy</h6>
+                <p>We take your privacy seriously and adhere to all applicable laws and regulations regarding patient confidentiality.</p>
+
+                <h6>Payment Policy</h6>
+                <p>Payment is expected at the time of service. We accept most major insurance plans, credit cards, and cash.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="agreeButton">I Agree</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="mt-5 py-3 bg-light">
+    <div class="container text-center">
+        <p class="mb-0">© 2023 HealthFlow. All rights reserved.</p>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+<script>
+    $(document).ready(function() {
+        const doctorId = $('input[name="doctorId"]').val();
+
+        // Fetch and display doctor info
+        $.ajax({
+            url: '/api/patient/doctors',
+            type: 'GET',
+            success: function(doctors) {
+                const doctor = doctors.find(d => d.id == doctorId);
+                if (doctor) {
+                    let html = `
+                            <h5>Dr. ${doctor.firstName} ${doctor.lastName}</h5>
+                            <p class="text-muted mb-2">${doctor.specialization}</p>
+                            ${doctor.bio ? '<p>' + doctor.bio + '</p>' : ''}
+                            <hr>
+                            <p><strong>Available Hours:</strong><br>Monday to Friday, 9 AM - 5 PM</p>
+                        `;
+                    $('#doctorInfo').html(html);
+                } else {
+                    $('#doctorInfo').html('<p class="text-danger">Doctor information not found</p>');
+                }
+            },
+            error: function() {
+                $('#doctorInfo').html('<p class="text-danger">Error loading doctor information</p>');
+            }
+        });
+
+        // Date picker setup
+        const today = new Date();
+        const minDate = today.toISOString().split('T')[0];
+        $('#appointmentDate').attr('min', minDate);
+
+        $('#appointmentDate').on('change', function() {
+            const selectedDate = $(this).val();
+            if (selectedDate) {
+                fetchAvailableSlots(doctorId, selectedDate);
+                $('#appointmentTime').prop('disabled', false);
+            } else {
+                $('#appointmentTime').prop('disabled', true);
+                $('#appointmentTime').html('<option value="">Select a date first</option>');
+            }
+        });
+
+        function fetchAvailableSlots(doctorId, date) {
+            // In a real application, this would call an API to get available time slots
+            $('#appointmentTime').html('<option value="">Loading available times...</option>');
+
+            // Simulating API call with timeout
+            setTimeout(function() {
+                let options = '<option value="">Select a time</option>';
+
+                // Generate sample time slots (9 AM to 5 PM, 30-minute intervals)
+                for (let hour = 9; hour < 17; hour++) {
+                    for (let minute = 0; minute < 60; minute += 30) {
+                        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                        const displayTime = formatTimeForDisplay(hour, minute);
+                        options += `<option value="${timeString}">${displayTime}</option>`;
+                    }
+                }
+
+                $('#appointmentTime').html(options);
+            }, 500);
+        }
+
+        function formatTimeForDisplay(hour, minute) {
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour % 12 || 12;
+            return `${displayHour}:${minute.toString().padStart(2, '0')} ${ampm}`;
+        }
+
+        // Form validation and submission logic
+        $('#appointmentTime').on('change', function() {
+            updateBookButtonState();
+        });
+
+        $('#agreeTerms').on('change', function() {
+            updateBookButtonState();
+        });
+
+        function updateBookButtonState() {
+            const dateSelected = $('#appointmentDate').val() !== '';
+            const timeSelected = $('#appointmentTime').val() !== '';
+            const termsAgreed = $('#agreeTerms').is(':checked');
+
+            $('#bookButton').prop('disabled', !(dateSelected && timeSelected && termsAgreed));
+        }
+
+        // Modal agree button
+        $('#agreeButton').on('click', function() {
+            $('#agreeTerms').prop('checked', true);
+            updateBookButtonState();
+        });
+
+        // Form submission handling
+        $('form').on('submit', function(e) {
+            // Remove the preventDefault - let the form submit normally
+            // We're no longer combining the date and time here
+
+            // Just validate inputs before submission
+            const date = $('#appointmentDate').val();
+            const time = $('#appointmentTime').val();
+
+            if (!date || !time) {
+                e.preventDefault();
+                alert('Please select both date and time for your appointment');
+                return false;
+            }
+
+            // Let the form submit normally - the controller will handle
+            // the separate appointmentDate and appointmentTime fields
+        });
+    });
+</script>
+</body>
+</html>

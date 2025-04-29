@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - HealthFlow</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="/">HealthFlow</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/patient/dashboard">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/patient/appointments">My Appointments</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/patient/doctors">Find Doctors</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/patient/profile">My Profile</a>
+                </li>
+            </ul>
+            <form th:action="@{/logout}" method="post" class="d-flex">
+                <button class="btn btn-outline-light" type="submit">Logout</button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h1>My Profile</h1>
+            <p class="lead">Manage your personal information</p>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Profile Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <div class="avatar-placeholder bg-light rounded-circle mx-auto mb-3" style="width: 128px; height: 128px; display: flex; align-items: center; justify-content: center; font-size: 36px;">
+                                <span th:if="${patient != null && patient.firstName != null && patient.lastName != null}"
+                                      th:text="${#strings.substring(patient.firstName, 0, 1) + #strings.substring(patient.lastName, 0, 1)}">PP</span>
+                            <span th:unless="${patient != null && patient.firstName != null && patient.lastName != null}">PP</span>
+                        </div>
+                        <h5 th:text="${patient != null ? patient.firstName + ' ' + patient.lastName : 'Patient Name'}">Patient Name</h5>
+                        <p th:text="${patient != null && patient.user != null ? patient.user.email : 'patient@example.com'}">patient@example.com</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-2">Account Details</h6>
+                        <p class="mb-1"><strong>Username:</strong> <span th:text="${patient != null && patient.user != null ? patient.user.username : 'username'}">username</span></p>
+                        <p class="mb-1"><strong>Patient ID:</strong> <span th:text="${patient != null ? patient.id : 'PID123'}">PID123</span></p>
+                        <p class="mb-1"><strong>Member Since:</strong> <span th:text="${#dates.format(#dates.createNow(), 'MMM dd, yyyy')}">Jan 1, 2023</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="alert alert-success alert-dismissible fade show" id="successAlert" role="alert" style="display: none;">
+                Profile updated successfully!
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <div class="alert alert-danger alert-dismissible fade show" id="errorAlert" role="alert" style="display: none;">
+                Error updating profile. Please try again.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Edit Profile</h5>
+                </div>
+                <div class="card-body">
+                    <form id="profileForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="firstName" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="firstName" name="firstName"
+                                       th:value="${patient != null ? patient.firstName : ''}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="lastName" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="lastName" name="lastName"
+                                       th:value="${patient != null ? patient.lastName : ''}" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="dateOfBirth" class="form-label">Date of Birth</label>
+                            <input type="date" class="form-control" id="dateOfBirth" name="dateOfBirth"
+                                   th:value="${patient != null && patient.dateOfBirth != null ? #temporals.format(patient.dateOfBirth, 'yyyy-MM-dd') : ''}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="gender" class="form-label">Gender</label>
+                            <select class="form-select" id="gender" name="gender" required>
+                                <option value="">Select Gender</option>
+                                <option value="MALE" th:selected="${patient != null && patient.gender != null && patient.gender.name() == 'MALE'}">Male</option>
+                                <option value="FEMALE" th:selected="${patient != null && patient.gender != null && patient.gender.name() == 'FEMALE'}">Female</option>
+                                <option value="OTHER" th:selected="${patient != null && patient.gender != null && patient.gender.name() == 'OTHER'}">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="phoneNumber" class="form-label">Phone Number</label>
+                            <input type="tel" class="form-control" id="phoneNumber" name="phoneNumber"
+                                   th:value="${patient != null ? patient.phoneNumber : ''}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="address" class="form-label">Address</label>
+                            <textarea class="form-control" id="address" name="address" rows="3"
+                                      th:text="${patient != null ? patient.address : ''}"></textarea>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">Security</h5>
+                </div>
+                <div class="card-body">
+                    <form id="passwordForm">
+                        <div class="mb-3">
+                            <label for="currentPassword" class="form-label">Current Password</label>
+                            <input type="password" class="form-control" id="currentPassword" name="currentPassword" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">New Password</label>
+                            <input type="password" class="form-control" id="newPassword" name="newPassword" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                            <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-danger">Change Password</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="mt-5 py-3 bg-light">
+    <div class="container text-center">
+        <p class="mb-0">© 2023 HealthFlow. All rights reserved.</p>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#profileForm').on('submit', function(e) {
+            e.preventDefault();
+
+            const updatedProfile = {
+                firstName: $('#firstName').val(),
+                lastName: $('#lastName').val(),
+                dateOfBirth: $('#dateOfBirth').val(),
+                gender: $('#gender').val(),
+                phoneNumber: $('#phoneNumber').val(),
+                address: $('#address').val()
+            };
+
+            $.ajax({
+                url: '/api/patient/profile',
+                type: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify(updatedProfile),
+                success: function(response) {
+                    $('#successAlert').show();
+                    setTimeout(function() {
+                        $('#successAlert').fadeOut();
+                    }, 3000);
+                },
+                error: function() {
+                    $('#errorAlert').show();
+                    setTimeout(function() {
+                        $('#errorAlert').fadeOut();
+                    }, 3000);
+                }
+            });
+        });
+
+        $('#passwordForm').on('submit', function(e) {
+            e.preventDefault();
+
+            if ($('#newPassword').val() !== $('#confirmPassword').val()) {
+                alert('New password and confirmation do not match');
+                return;
+            }
+
+            // This would normally make an AJAX call to a password update endpoint
+            alert('Password change functionality would be implemented here');
+            $(this)[0].reset();
+        });
+    });
+</script>
+</body>
+</html>
