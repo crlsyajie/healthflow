@@ -27,7 +27,9 @@ This project uses the following Spring Boot dependencies:
 - **JDBC API** – Low-level database interaction (optional with JPA)
 - **Spring Data JPA** – Simplifies database access using repositories
 - **MySQL Driver** – For connecting the app to a MySQL database
-- **Validation** – To ensure data integrity using annotations like `@NotNull`, `@Size`, etc
+- **Validation** – To ensure data integrity using annotations like `@NotNull`, `@Size`, etc.
+- **CycloneDX SBOM support** – For generating a Software Bill of Materials (helps with software supply chain security)
+
 
 ## 🔐 Role-Based Access Control (RBAC)
 
