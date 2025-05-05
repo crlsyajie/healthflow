@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 29, 2025 at 07:57 AM
+-- Generation Time: May 05, 2025 at 12:17 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -47,9 +47,6 @@ CREATE TABLE `appointments` (
   `id` bigint(20) NOT NULL,
   `patient_id` bigint(20) NOT NULL,
   `doctor_id` bigint(20) NOT NULL,
-  `appointment_date` date NOT NULL,
-  `start_time` time NOT NULL,
-  `end_time` time NOT NULL,
   `status` enum('PENDING','CONFIRMED','CANCELLED','COMPLETED','RESCHEDULED') NOT NULL,
   `notes` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -63,17 +60,13 @@ CREATE TABLE `appointments` (
 -- Dumping data for table `appointments`
 --
 
-INSERT INTO `appointments` (`id`, `patient_id`, `doctor_id`, `appointment_date`, `start_time`, `end_time`, `status`, `notes`, `created_at`, `updated_at`, `appointment_time`, `duration_minutes`, `reason`) VALUES
-(1, 1, 1, '0000-00-00', '00:00:00', '00:00:00', 'PENDING', NULL, '2025-04-25 23:11:40', '2025-04-29 00:47:46', '2025-04-29 09:00:00.000000', 30, 'Regular checkup'),
-(2, 1, 1, '0000-00-00', '00:00:00', '00:00:00', 'CANCELLED', NULL, '2025-04-23 23:11:40', '2025-04-29 00:47:50', '2025-04-30 14:30:00.000000', 30, 'Follow-up visit'),
-(3, 1, 1, '0000-00-00', '00:00:00', '00:00:00', 'CANCELLED', NULL, '2025-04-18 23:11:40', '2025-04-29 00:47:54', '2025-05-06 11:00:00.000000', 30, 'Annual physical'),
-(4, 1, 1, '0000-00-00', '00:00:00', '00:00:00', 'COMPLETED', NULL, '2025-04-14 23:11:40', '2025-04-28 23:11:40', '2025-04-22 10:00:00.000000', 30, 'Blood test'),
-(5, 2, 2, '0000-00-00', '00:00:00', '00:00:00', 'COMPLETED', 'Patient presented with mild chest pain. ECG was normal. Recommended lifestyle changes and follow-up in 2 weeks.', '2025-04-08 23:11:40', '2025-04-28 23:11:40', '2025-04-15 10:30:00.000000', 30, 'Initial cardiology consultation'),
-(6, 2, 2, '0000-00-00', '00:00:00', '00:00:00', 'COMPLETED', NULL, '2025-04-14 23:11:40', '2025-04-28 23:11:40', '2025-04-22 11:15:00.000000', 30, 'ECG test'),
-(7, 2, 2, '0000-00-00', '00:00:00', '00:00:00', 'CONFIRMED', NULL, '2025-04-23 23:11:40', '2025-04-29 00:47:57', '2025-04-29 16:00:00.000000', 30, 'Follow-up consultation'),
-(8, 2, 2, '0000-00-00', '00:00:00', '00:00:00', 'CANCELLED', NULL, '2025-04-25 23:11:40', '2025-04-29 00:48:06', '2025-05-29 14:00:00.000000', 30, 'Stress test'),
-(9, 1, 2, '0000-00-00', '00:00:00', '00:00:00', 'PENDING', NULL, '2025-03-24 23:11:40', '2025-04-29 00:48:02', '2025-03-30 09:30:00.000000', 30, 'Heart checkup'),
-(10, 1, 2, '0000-00-00', '00:00:00', '00:00:00', 'RESCHEDULED', NULL, '2025-04-26 23:11:40', '2025-04-29 00:48:10', '2025-05-09 13:45:00.000000', 30, 'Referral from GP for heart palpitations');
+INSERT INTO `appointments` (`id`, `patient_id`, `doctor_id`, `status`, `notes`, `created_at`, `updated_at`, `appointment_time`, `duration_minutes`, `reason`) VALUES
+(1, 1, 1, 'PENDING', NULL, '2025-04-25 23:11:40', '2025-04-29 00:47:46', '2025-04-29 09:00:00.000000', 30, 'Regular checkup'),
+(2, 1, 1, 'CANCELLED', NULL, '2025-04-23 23:11:40', '2025-04-29 00:47:50', '2025-04-30 14:30:00.000000', 30, 'Follow-up visit'),
+(3, 1, 1, 'CANCELLED', NULL, '2025-04-18 23:11:40', '2025-04-29 00:47:54', '2025-05-06 11:00:00.000000', 30, 'Annual physical'),
+(4, 1, 1, 'COMPLETED', NULL, '2025-04-14 23:11:40', '2025-04-28 23:11:40', '2025-04-22 10:00:00.000000', 30, 'Blood test'),
+(11, 1, 1, 'COMPLETED', 'asdasd', '2025-05-03 04:51:50', '2025-05-05 09:44:41', '2025-05-31 08:30:00.000000', 30, 'asdasd'),
+(13, 5, 4, 'PENDING', 'asd', '2025-05-05 02:03:00', '2025-05-05 10:03:00', '2025-05-13 02:30:00.000000', 30, 'yu');
 
 -- --------------------------------------------------------
 
@@ -125,7 +118,10 @@ CREATE TABLE `doctors` (
 
 INSERT INTO `doctors` (`id`, `user_id`, `department_id`, `first_name`, `last_name`, `specialization`, `phone_number`, `bio`, `license_number`) VALUES
 (1, 2, 1, 'Test', 'Doctor', 'General Medicine', '123-456-7890', 'This is a test doctor account created for testing the doctor functionalities.', 'DR12345'),
-(2, 3, 2, 'Sarah', 'Specialist', 'Cardiology', '555-123-4567', 'Experienced cardiologist with 10+ years of clinical practice. Specializes in heart conditions and preventive cardiology.', 'DR67890');
+(4, 11, 2, 'cardo', 'di namamatay', 'malakas cumardio', '092222222', 'asdasd', 'CR2521'),
+(5, 12, 3, 'orthoi', 'bayolente', 'bayodigrpiy', '3456363423', 'dasfasd', 'DR5312323'),
+(6, 13, 4, 'nero', 'logy', 'nuro nuro', '1534122345', 'asdasd', 'af3123r'),
+(8, 16, NULL, 'Doctor', 'specialist', 'General Medicine', '000-000-0000', 'Doctor profile automatically created by system fix.', 'DRE02CDD59');
 
 -- --------------------------------------------------------
 
@@ -154,11 +150,19 @@ CREATE TABLE `notifications` (
   `message` varchar(1000) NOT NULL,
   `is_read` tinyint(1) DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `type` enum('APPOINTMENT','SYSTEM','REMINDER') NOT NULL,
+  `type` enum('APPOINTMENT_CANCELLED','APPOINTMENT_CREATED','APPOINTMENT_UPDATED','SYSTEM_NOTIFICATION','USER_MESSAGE') NOT NULL,
   `related_id` bigint(20) DEFAULT NULL,
   `appointment_id` bigint(20) DEFAULT NULL,
   `read` tinyint(1) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `notifications`
+--
+
+INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `is_read`, `created_at`, `type`, `related_id`, `appointment_id`, `read`) VALUES
+(6, 4, 'Appointment Canceled', 'Appointment with Dr. Doctor for ge talon on 2025-05-24 15:00 has been canceled', 0, '2025-05-05 00:42:25', 'APPOINTMENT_CANCELLED', NULL, NULL, 0),
+(7, 4, 'Appointment Canceled', 'Appointment with Dr. Specialist for ge talon on 2025-03-30 17:30 has been canceled', 0, '2025-05-05 00:42:34', 'APPOINTMENT_CANCELLED', NULL, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -182,8 +186,10 @@ CREATE TABLE `patients` (
 --
 
 INSERT INTO `patients` (`id`, `user_id`, `first_name`, `last_name`, `date_of_birth`, `gender`, `phone_number`, `address`) VALUES
-(1, 4, 'Test', 'Patient', '1990-01-01', 'MALE', '987-654-3210', '123 Test Street'),
-(2, 5, 'Jane', 'Doe', '1985-05-15', 'FEMALE', '555-987-6543', '456 Oak Avenue');
+(1, 4, 'ge', 'talon', '1990-01-01', 'MALE', '987-654-3210', '123 Test Street'),
+(2, 5, 'Jane', 'Doe', '1985-05-15', 'FEMALE', '555-987-6543', '456 Oak Avenue'),
+(4, 10, 'patiente', 'uno', '2003-01-03', 'FEMALE', '09456025423', 'jan sa tabi tabi'),
+(5, 15, 'may', 'sakit', '2009-02-13', 'FEMALE', '098239541', 'asjdhfjkads');
 
 -- --------------------------------------------------------
 
@@ -205,12 +211,17 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `username`, `password`, `email`, `role`, `enabled`) VALUES
-(1, 'admin', '$2a$10$iqFVemuw/jmOyRYzcubjH.KPJOCbNgALC0kgBWA6sFViM0YJhWHdu', 'admin@example.com', 'ADMIN', 1),
-(2, 'testdoctor', '$2a$10$gV9BWcDuFHSg5kRK0ebjyOiQUsGaiAnf4WrBlb.TEVnRchlkydshi', 'testdoctor@example.com', 'DOCTOR', 1),
-(3, 'specialist', '$2a$10$71lkB/HHgMit.XK8c9Nn4e.YYOTH8eXAqNhzadnAk97saLjyj5/46', 'specialist@example.com', 'DOCTOR', 1),
-(4, 'testpatient', '$2a$10$34Zm.qA3XgoOMMQeFXdwxuCcA7pulwwLBpGZCP5hund.5e57oKlQi', 'testpatient@example.com', 'PATIENT', 1),
-(5, 'janedoe', '$2a$10$G/qV1ILyu0zmUOWxsOYVS.2XwEAz6yO/POvdmkFdN57UzxldzThLS', 'jane.doe@example.com', 'PATIENT', 1),
-(6, 'testadmin', 'password', 'testadmin@gmail.com', 'ADMIN', 6);
+(1, 'admin', '$2a$10$YTITB7jt11PzSkFtMKraROMbw16Uyu7/nYZX2Zj1YrsxP7rtJwl8q', 'admin@example.com', 'ADMIN', 1),
+(2, 'testdoctor', '$2a$10$/4BkVcu04hdClA50z0DuCeWV7x.Coh33Uw.VMH2rLicPOZKcmraJK', 'testdoctor@example.com', 'DOCTOR', 1),
+(4, 'testpatient', '$2a$10$YHuv98rytu6koAUS0ttzROmhm02clUtq3CxXubs9txJ1C3qFBBzby', 'testpatient@example.com', 'PATIENT', 1),
+(5, 'janedoe', '$2a$10$MTpdLJ6TSErfrR8P5Vo/MuTPgV8VOK5gFER0Ol2Ns2XL5d4afAcB.', 'jane.doe@example.com', 'PATIENT', 1),
+(6, 'testadmin', 'password', 'testadmin@gmail.com', 'ADMIN', 6),
+(10, 'patiente', '$2a$10$YbirlzC4vmRBD6xwwhIKuOHwweB2AI3ODU2rLYxw5VVwT1KAZhocK', 'patiente@gmail.com', 'PATIENT', 1),
+(11, 'cardo', '$2a$10$Jeh08yh1JFZBbinWm21w3uRiFAMrzjHyRPD42jtxrq8D.QPL8id7W', 'cardo@gmail.com', 'DOCTOR', 1),
+(12, 'ortho', '$2a$10$GJLcj3k36JTfK9Ze.cDslO/qSPiSEqrqz4FL1gBlm8xRTGhXnqUU6', 'ortho@gmail.com', 'DOCTOR', 1),
+(13, 'nero', '$2a$10$SuWPcpjjDJA1EdKjrGzrRe2V4dMr7N2.i8o3B55MsdFKtnlih9jx6', 'nero@gmail.com', 'DOCTOR', 1),
+(15, 'sakit', '$2a$10$sD0x0V8SSyPFwXwZKvkOs.yzuGN5Vjchgot1QKhPud18Q8HotzQTq', 'sakitin@gmail.com', 'PATIENT', 1),
+(16, 'specialist', '$2a$10$BJt5vvg/is/PX.1izDXEku600t9DiwzrEZ5RbQYnsi0caKz1fjktC', 'specialist@example.com', 'DOCTOR', 1);
 
 --
 -- Indexes for dumped tables
@@ -291,7 +302,7 @@ ALTER TABLE `admins`
 -- AUTO_INCREMENT for table `appointments`
 --
 ALTER TABLE `appointments`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `departments`
@@ -303,7 +314,7 @@ ALTER TABLE `departments`
 -- AUTO_INCREMENT for table `doctors`
 --
 ALTER TABLE `doctors`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `doctor_availability`
@@ -315,19 +326,19 @@ ALTER TABLE `doctor_availability`
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `patients`
 --
 ALTER TABLE `patients`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- Constraints for dumped tables
