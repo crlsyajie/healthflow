@@ -1,0 +1,161 @@
+# HealthFlow System Cheatsheet
+
+This document explains how the HealthFlow healthcare appointment system works in simple English.
+
+## System Overview
+
+HealthFlow is a healthcare appointment booking system with different user roles:
+
+1. **Patients** - Can book, cancel, and reschedule appointments with doctors
+2. **Doctors** - Can view and manage appointments, patient information, and availability
+3. **Admins** - Can manage doctors, patients, departments, and appointments
+
+## Architecture
+
+The system uses Spring Boot (Java) with these components:
+
+- **Models** - Data structures that store information (like Patient, Doctor, Appointment)
+- **Controllers** - Handle web requests and route them to appropriate services
+- **Services** - Contain business logic and database operations
+- **Repositories** - Interface with the database
+- **Templates** - HTML pages with Thymeleaf for dynamic content
+
+## Key Files and Their Purpose
+
+### Models (Data Objects)
+
+- `Patient.java` - Stores patient information (name, contact details, medical history)
+- `Doctor.java` - Stores doctor information (name, specialization, license number)
+- `Appointment.java` - Stores appointment details (date, time, status, patient, doctor)
+- `User.java` - Stores user account information (username, password, role)
+
+### Controllers
+
+- `AppointmentController.java` - Handles patient appointment booking requests
+- `PatientController.java` - Handles patient-related page requests
+- `DoctorController.java` - Handles doctor-related page requests
+- `AdminController.java` - Handles admin-related page requests
+- `AuthController.java` - Handles login/registration requests
+
+### REST Controllers (for AJAX)
+
+- `PatientRestController.java` - API endpoints for patient data
+- `DoctorRestController.java` - API endpoints for doctor data
+- `AdminRestController.java` - API endpoints for admin operations
+
+### Services
+
+- `PatientService.java/PatientServiceImpl.java` - Business logic for patient operations
+- `DoctorService.java/DoctorServiceImpl.java` - Business logic for doctor operations
+- `AppointmentService.java/AppointmentServiceImpl.java` - Business logic for appointment operations
+
+## Common Operations Explained
+
+### 1. Patient Books an Appointment
+
+When a patient books an appointment:
+
+1. They visit `/patient/doctors` to see all doctors
+2. They click "Book Appointment" which goes to `/patient/appointment/book?doctorId={id}`
+3. The page loads with doctor information (via AJAX call to `/api/patient/doctors?doctorId={id}`)
+4. Patient selects date, time, and reason
+5. Form submits to `AppointmentController.bookAppointment()` method
+6. Controller creates an Appointment object, sets all details
+7. Service saves appointment to database
+8. Patient is redirected to appointments page
+
+### 2. Doctor Views Appointments
+
+When a doctor views appointments:
+
+1. They visit `/doctor/appointments`
+2. `DoctorController.appointments()` handles request
+3. Controller gets doctor from username (in security context)
+4. Service retrieves appointments for that doctor from database
+5. Appointments are displayed in HTML template
+
+### 3. Admin Manages Users
+
+When an admin manages users:
+
+1. They visit `/admin/patients` or `/admin/doctors`
+2. `AdminController` gets all patients/doctors
+3. Admin can view, edit, or delete users
+4. Changes are processed by `AdminController` and saved via service
+
+## Key JavaScript/AJAX Features
+
+1. **Doctor Information Loading**:
+   ```javascript
+   $.ajax({
+     url: '/api/patient/doctors',
+     data: { doctorId: doctorId },
+     success: function(doctors) { /* Display doctor info */ }
+   });
+   ```
+
+2. **Available Time Slots**:
+   ```javascript
+   function fetchAvailableSlots(doctorId, date) {
+     // Get available slots for the selected date
+   }
+   ```
+
+## Data Flow Example - Booking Appointment
+
+1. Patient selects doctor and clicks "Book Appointment"
+2. `AppointmentController.bookAppointmentForm()` shows booking form
+3. Patient enters details and submits
+4. `AppointmentController.bookAppointment()` processes form
+5. Creates Appointment object with:
+   - Patient (from logged-in user)
+   - Doctor (from doctorId parameter)
+   - Date and time (from form)
+   - Reason and notes (from form)
+6. Sets status to "PENDING"
+7. `patientService.bookAppointment()` saves to database
+8. Success message shown on redirect
+
+## Common Errors and Solutions
+
+1. **"Doctor information not found"**
+   - Cause: REST endpoint not finding doctor by ID
+   - Solution: Ensure `/api/patient/doctors` endpoint handles doctorId parameter
+
+2. **"Field 'appointment_date' doesn't have a default value"**
+   - Cause: Database field requires value but none provided
+   - Solution: Ensure appointment date is set before saving
+
+3. **Authentication/Authorization Issues**
+   - Cause: Security configurations incorrect or missing roles
+   - Solution: Check security settings and user roles
+
+## Database Relationships
+
+- **User → Patient/Doctor**: One-to-One (Each user account is either a patient or doctor)
+- **Patient → Appointments**: One-to-Many (Patient can have many appointments)
+- **Doctor → Appointments**: One-to-Many (Doctor can have many appointments)
+- **Doctor → Department**: Many-to-One (Many doctors in one department)
+
+## Important Java Concepts Used
+
+1. **@Controller/@RestController** - Handles web requests
+2. **@RequestMapping** - Maps URLs to controller methods
+3. **@Service** - Marks class as business service
+4. **@Autowired** - Injects dependencies automatically
+5. **@Transactional** - Ensures database operations are atomic
+
+## Key HTML/Thymeleaf Concepts
+
+1. `th:each` - Iterates over collections (like lists of doctors)
+2. `th:if`/`th:unless` - Conditional rendering
+3. `th:text` - Inserts dynamic text
+4. `th:action` - Sets form submission URL
+5. `th:object` - Binds form to model object
+
+## Security Flow
+
+1. User credentials checked at login via Spring Security
+2. Authenticated user gets session with role (PATIENT, DOCTOR, ADMIN)
+3. Each URL path is protected based on roles
+4. `Authentication` object available in controllers has user details 
