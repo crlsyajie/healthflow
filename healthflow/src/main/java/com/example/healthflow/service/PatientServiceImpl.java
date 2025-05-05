@@ -5,6 +5,9 @@ import com.example.healthflow.repository.AppointmentRepository;
 import com.example.healthflow.repository.DoctorRepository;
 import com.example.healthflow.repository.PatientRepository;
 import com.example.healthflow.repository.UserRepository;
+import com.example.healthflow.repository.NotificationRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +19,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class PatientServiceImpl implements PatientService {
+
+    private static final Logger log = LoggerFactory.getLogger(PatientServiceImpl.class);
 
     @Autowired
     private PatientRepository patientRepository;
@@ -29,10 +34,16 @@ public class PatientServiceImpl implements PatientService {
     @Autowired
     private AppointmentRepository appointmentRepository;
 
+    @Autowired
+    private NotificationRepository notificationRepository;
+
     @Override
     public Patient getPatientByUsername(String username) {
         User user = userRepository.findByUsername(username);
-        return patientRepository.findByUser(user);
+        if (user == null) {
+            return null;
+        }
+        return patientRepository.findByUser(user).orElse(null);
     }
 
     @Override
@@ -49,7 +60,7 @@ public class PatientServiceImpl implements PatientService {
     public List<Appointment> getUpcomingAppointments(Patient patient) {
         LocalDateTime now = LocalDateTime.now();
         List<AppointmentStatus> excludedStatuses = Arrays.asList(
-                AppointmentStatus.CANCELED, AppointmentStatus.COMPLETED);
+                AppointmentStatus.CANCELLED, AppointmentStatus.COMPLETED);
         return appointmentRepository.findByPatientAndAppointmentTimeAfterAndStatusNotInOrderByAppointmentTimeAsc(
                 patient, now, excludedStatuses);
     }
@@ -65,6 +76,11 @@ public class PatientServiceImpl implements PatientService {
     }
 
     @Override
+    public Doctor getDoctorById(Long id) {
+        return doctorRepository.findById(id).orElse(null);
+    }
+
+    @Override
     public List<String> getAllDepartments() {
         return doctorRepository.findAll().stream()
                 .map(Doctor::getSpecialization)
@@ -75,7 +91,7 @@ public class PatientServiceImpl implements PatientService {
     @Override
     @Transactional
     public Appointment bookAppointment(Appointment appointment) {
-        appointment.setStatus(AppointmentStatus.SCHEDULED);
+        appointment.setStatus(AppointmentStatus.PENDING);
         return appointmentRepository.save(appointment);
     }
 
@@ -87,7 +103,7 @@ public class PatientServiceImpl implements PatientService {
             return false;
         }
 
-        appointment.setStatus(AppointmentStatus.CANCELED);
+        appointment.setStatus(AppointmentStatus.CANCELLED);
         appointmentRepository.save(appointment);
         return true;
     }
@@ -110,6 +126,72 @@ public class PatientServiceImpl implements PatientService {
     @Override
     @Transactional
     public Patient updateProfile(Patient patient) {
-        return patientRepository.save(patient);
+        try {
+            log.info("Updating profile for patient ID: {}, name: {} {}",
+                    patient.getId(), patient.getFirstName(), patient.getLastName());
+
+            // Validate required fields
+            if (patient.getFirstName() == null || patient.getFirstName().trim().isEmpty()) {
+                log.error("First name is required");
+                throw new IllegalArgumentException("First name is required");
+            }
+
+            if (patient.getLastName() == null || patient.getLastName().trim().isEmpty()) {
+                log.error("Last name is required");
+                throw new IllegalArgumentException("Last name is required");
+            }
+
+            if (patient.getDateOfBirth() == null) {
+                log.error("Date of birth is required");
+                throw new IllegalArgumentException("Date of birth is required");
+            }
+
+            // Save the patient
+            Patient savedPatient = patientRepository.save(patient);
+            log.info("Profile successfully updated for patient ID: {}", savedPatient.getId());
+            return savedPatient;
+        } catch (Exception e) {
+            log.error("Error updating patient profile: {}", e.getMessage(), e);
+            throw e; // Rethrow to be handled by the controller
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean deletePatient(Long patientId) {
+        // Use Optional pattern for safer null handling
+        return patientRepository.findById(patientId)
+                .map(patient -> {
+                    try {
+                        // Get the user reference before deletion
+                        User user = patient.getUser();
+
+                        // Delete all appointments for this patient
+                        List<Appointment> appointments = appointmentRepository.findByPatient(patient);
+                        for (Appointment appointment : appointments) {
+                            // Delete notifications first
+                            notificationRepository.deleteByAppointmentId(appointment.getId());
+                            // Then delete the appointment
+                            appointmentRepository.delete(appointment);
+                        }
+
+                        // Delete the patient record
+                        patientRepository.delete(patient);
+
+                        // Finally delete the user if it exists
+                        if (user != null) {
+                            userRepository.deleteById(user.getId());
+                        }
+
+                        return true;
+                    } catch (Exception e) {
+                        log.error("Error while deleting patient {}: {}", patientId, e.getMessage());
+                        return false;
+                    }
+                })
+                .orElseGet(() -> {
+                    log.warn("Patient not found with ID: {}", patientId);
+                    return false;
+                });
     }
 }

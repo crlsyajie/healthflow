@@ -3,6 +3,8 @@ package com.example.healthflow.service;
 import com.example.healthflow.model.Role;
 import com.example.healthflow.model.User;
 import com.example.healthflow.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -13,6 +15,8 @@ import java.util.Optional;
 
 @Service
 public class UserServiceImpl implements UserService {
+
+    private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
 
     @Autowired
     private UserRepository userRepository;
@@ -44,8 +48,6 @@ public class UserServiceImpl implements UserService {
         return !userRepository.existsByEmail(email);
     }
 
-    // Implementations for admin user management
-
     @Override
     public List<User> findAll() {
         return userRepository.findAll();
@@ -58,19 +60,35 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User findById(Long id) {
-        Optional<User> user = userRepository.findById(id);
-        return user.orElse(null);
+        return userRepository.findById(id).orElse(null);
     }
 
     @Override
-    @Transactional
     public User saveUser(User user) {
         return userRepository.save(user);
     }
 
     @Override
     @Transactional
-    public void deleteUser(Long id) {
-        userRepository.deleteById(id);
+    public boolean deleteUser(Long id) {
+        try {
+            if (id == null) {
+                log.error("Cannot delete user with null ID");
+                return false;
+            }
+
+            // Check if user exists before deleting
+            if (!userRepository.existsById(id)) {
+                log.error("User with ID {} does not exist", id);
+                return false;
+            }
+
+            userRepository.deleteById(id);
+            log.info("User with ID {} successfully deleted", id);
+            return true;
+        } catch (Exception e) {
+            log.error("Error deleting user with ID {}: {}", id, e.getMessage(), e);
+            return false;
+        }
     }
 }

@@ -14,9 +14,11 @@ public interface PatientService {
     List<Appointment> getUpcomingAppointments(Patient patient);
     List<Appointment> getAppointmentHistory(Patient patient);
     List<Doctor> getAllDoctors();
+    Doctor getDoctorById(Long id);
     List<String> getAllDepartments();
     Appointment bookAppointment(Appointment appointment);
     boolean cancelAppointment(Long appointmentId);
     boolean rescheduleAppointment(Long appointmentId, Appointment updatedAppointment);
     Patient updateProfile(Patient patient);
+    boolean deletePatient(Long patientId);
 }

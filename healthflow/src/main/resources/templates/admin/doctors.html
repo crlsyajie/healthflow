@@ -8,7 +8,7 @@
     <link rel="stylesheet" th:href="@{/css/styles.css}">
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+<nav class="navbar navbar-expand-lg navbar-dark bg-danger">
     <div class="container">
         <a class="navbar-brand" href="/">HealthFlow</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-label="Toggle navigation">
@@ -180,25 +180,24 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p class="text-info mb-3">
-                    Note: To add a doctor, first create a user account with DOCTOR role.
-                    Then use this form to complete their profile.
-                </p>
                 <form id="addDoctorForm" action="/admin/doctors/add" method="post">
+                    <h6 class="mb-3">User Account Details</h6>
                     <div class="row mb-3">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label for="username" class="form-label">Username</label>
                             <input type="text" class="form-control" id="username" name="username" required>
-                            <div class="form-text">Enter the username of an existing user with DOCTOR role</div>
                         </div>
-                        <div class="col-md-6">
-                            <label for="department" class="form-label">Department</label>
-                            <select class="form-select" id="department" name="departmentId" required>
-                                <option value="">Select Department</option>
-                                <option th:each="dept : ${departments}" th:value="${dept.id}" th:text="${dept.name}"></option>
-                            </select>
+                        <div class="col-md-4">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
                         </div>
                     </div>
+
+                    <h6 class="mb-3">Doctor Profile Details</h6>
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="firstName" class="form-label">First Name</label>
@@ -211,17 +210,26 @@
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
+                            <label for="department" class="form-label">Department</label>
+                            <select class="form-select" id="department" name="departmentId" required>
+                                <option value="">Select Department</option>
+                                <option th:each="dept : ${departments}" th:value="${dept.id}" th:text="${dept.name}"></option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
                             <label for="specialization" class="form-label">Specialization</label>
                             <input type="text" class="form-control" id="specialization" name="specialization" required>
                         </div>
+                    </div>
+                    <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="licenseNumber" class="form-label">License Number</label>
                             <input type="text" class="form-control" id="licenseNumber" name="licenseNumber" required>
                         </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="phoneNumber" class="form-label">Phone Number</label>
-                        <input type="text" class="form-control" id="phoneNumber" name="phoneNumber">
+                        <div class="col-md-6">
+                            <label for="phoneNumber" class="form-label">Phone Number</label>
+                            <input type="text" class="form-control" id="phoneNumber" name="phoneNumber">
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label for="bio" class="form-label">Bio</label>
@@ -239,7 +247,7 @@
 
 <footer class="mt-5 py-3 bg-light">
     <div class="container text-center">
-        <p class="mb-0">© 2023 HealthFlow. All rights reserved.</p>
+        <p class="mb-0">© 2025 HealthFlow. All rights reserved.</p>
     </div>
 </footer>
 

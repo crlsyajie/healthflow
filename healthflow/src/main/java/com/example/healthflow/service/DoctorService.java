@@ -32,4 +32,7 @@ public interface DoctorService {
     Patient getPatientDetails(Long patientId);
     Appointment updateAppointmentStatus(Long appointmentId, AppointmentStatus status);
     List<Appointment> getNotifications(Doctor doctor);
+
+    // Doctor profile management
+    Doctor updateDoctorInfo(Doctor doctor);
 } 

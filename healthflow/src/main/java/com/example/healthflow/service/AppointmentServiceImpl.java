@@ -7,6 +7,7 @@ import com.example.healthflow.repository.NotificationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -16,6 +17,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class AppointmentServiceImpl implements AppointmentService {
 
     @Autowired
@@ -53,16 +55,34 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     @Transactional
     public boolean deleteAppointment(Long id) {
-        Appointment appointment = appointmentRepository.findById(id).orElse(null);
-        if (appointment == null) {
+        try {
+            Appointment appointment = appointmentRepository.findById(id).orElse(null);
+            if (appointment == null) {
+                return false;
+            }
+
+            // First delete existing notifications for this appointment
+            notificationRepository.deleteByAppointmentId(id);
+
+            // Create cancellation notification before deleting
+            Notification notification = new Notification();
+            notification.setType(Notification.NotificationType.APPOINTMENT_CANCELLED);
+            notification.setTitle("Appointment Canceled");
+            notification.setMessage("Appointment with Dr. " + appointment.getDoctor().getLastName() +
+                    " for " + appointment.getPatient().getFirstName() + " " +
+                    appointment.getPatient().getLastName() + " on " +
+                    appointment.getAppointmentTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) +
+                    " has been canceled");
+            notification.setUser(appointment.getPatient().getUser());
+            notificationRepository.save(notification);
+
+            // Finally delete the appointment
+            appointmentRepository.delete(appointment);
+            return true;
+        } catch (Exception e) {
+            log.error("Error deleting appointment {}: {}", id, e.getMessage());
             return false;
         }
-
-        // Create notification for deleted appointment
-        createAppointmentNotification(appointment, Notification.NotificationType.APPOINTMENT_CANCELED);
-
-        appointmentRepository.delete(appointment);
-        return true;
     }
 
     @Override
@@ -74,7 +94,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     public List<Appointment> getPendingAppointments() {
-        return appointmentRepository.findByStatus(AppointmentStatus.SCHEDULED);
+        return appointmentRepository.findByStatus(AppointmentStatus.PENDING);
     }
 
     @Override
@@ -92,6 +112,9 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     public List<Appointment> getAppointmentsByPatient(Patient patient) {
+        if (patient == null) {
+            return Collections.emptyList();
+        }
         return appointmentRepository.findByPatient(patient);
     }
 
@@ -271,6 +294,9 @@ public class AppointmentServiceImpl implements AppointmentService {
         notification.setAppointment(appointment);
         notification.setType(type);
 
+        // Set the user to the patient's user for all appointment notifications
+        notification.setUser(appointment.getPatient().getUser());
+
         // Different titles and messages based on notification type
         switch (type) {
             case APPOINTMENT_CREATED:
@@ -288,7 +314,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                         appointment.getPatient().getLastName() + " with Dr. " +
                         appointment.getDoctor().getLastName());
                 break;
-            case APPOINTMENT_CANCELED:
+            case APPOINTMENT_CANCELLED:
                 notification.setTitle("Appointment Canceled");
                 notification.setMessage("Appointment with Dr. " + appointment.getDoctor().getLastName() +
                         " for " + appointment.getPatient().getFirstName() + " " +
@@ -306,4 +332,4 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         notificationRepository.save(notification);
     }
-}
+} 

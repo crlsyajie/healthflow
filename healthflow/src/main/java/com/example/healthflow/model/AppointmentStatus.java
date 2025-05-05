@@ -1,14 +1,12 @@
 package com.example.healthflow.model;
 
 public enum AppointmentStatus {
-    SCHEDULED,
-    COMPLETED,
-    CANCELED,
-    CANCELLED,  // Alternative spelling that might be in the database
-    RESCHEDULED,
-    NO_SHOW,
     PENDING,
     CONFIRMED,
+    CANCELLED,
+    COMPLETED,
+    RESCHEDULED,
+    NO_SHOW,
     UNKNOWN;  // Fallback value
 
     // Handle conversion from string (including null)
@@ -21,9 +19,6 @@ public enum AppointmentStatus {
             return AppointmentStatus.valueOf(status.toUpperCase());
         } catch (IllegalArgumentException e) {
             // Handle any status values that don't match our enum constants
-            if (status.equalsIgnoreCase("CANCELLED")) {
-                return CANCELED;
-            }
             return UNKNOWN;
         }
     }

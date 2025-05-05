@@ -26,7 +26,7 @@ public class Notification {
     private boolean isRead = false;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private NotificationType type;
 
     @ManyToOne
@@ -40,7 +40,7 @@ public class Notification {
     public enum NotificationType {
         APPOINTMENT_CREATED,
         APPOINTMENT_UPDATED,
-        APPOINTMENT_CANCELED,
+        APPOINTMENT_CANCELLED,
         SYSTEM_NOTIFICATION,
         USER_MESSAGE
     }

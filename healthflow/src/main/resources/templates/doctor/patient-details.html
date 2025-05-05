@@ -87,7 +87,7 @@
                         </li>
                         <li class="list-group-item d-flex justify-content-between">
                             <span>Age:</span>
-                            <span th:text="${patient.dateOfBirth != null ? #dates.year(#dates.createNow()) - #dates.year(patient.dateOfBirth) : 'Unknown'}">43</span>
+                            <span th:text="${patient.dateOfBirth != null ? #temporals.year(#temporals.createNow()) - #temporals.year(patient.dateOfBirth) : 'Unknown'}">43</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between">
                             <span>Gender:</span>
@@ -152,9 +152,9 @@
                                 <td th:text="${appointment.appointmentTime != null ? #temporals.format(appointment.appointmentTime, 'hh:mm a') : 'Unknown time'}">10:30 AM</td>
                                 <td th:text="${appointment.reason != null ? appointment.reason : 'Not specified'}">Check-up</td>
                                 <td>
-                                    <span th:if="${appointment.status != null && appointment.status.name() == 'SCHEDULED'}" class="badge bg-primary">Scheduled</span>
+                                    <span th:if="${appointment.status != null && appointment.status.name() == 'PENDING'}" class="badge bg-primary">Pending</span>
                                     <span th:if="${appointment.status != null && appointment.status.name() == 'COMPLETED'}" class="badge bg-success">Completed</span>
-                                    <span th:if="${appointment.status != null && appointment.status.name() == 'CANCELED'}" class="badge bg-danger">Canceled</span>
+                                    <span th:if="${appointment.status != null && appointment.status.name() == 'CANCELLED'}" class="badge bg-danger">Cancelled</span>
                                     <span th:if="${appointment.status != null && appointment.status.name() == 'NO_SHOW'}" class="badge bg-warning">No Show</span>
                                     <span th:if="${appointment.status == null}" class="badge bg-secondary">Unknown</span>
                                 </td>
@@ -335,7 +335,7 @@
 
 <footer class="mt-5 py-3 bg-light">
     <div class="container text-center">
-        <p class="mb-0">© 2023 HealthFlow. All rights reserved.</p>
+        <p class="mb-0">© 2025 HealthFlow. All rights reserved.</p>
     </div>
 </footer>
 

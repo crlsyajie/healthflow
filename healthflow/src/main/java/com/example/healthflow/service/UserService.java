@@ -16,5 +16,5 @@ public interface UserService {
     List<User> findAllByRole(Role role);
     User findById(Long id);
     User saveUser(User user);
-    void deleteUser(Long id);
+    boolean deleteUser(Long id);
 }

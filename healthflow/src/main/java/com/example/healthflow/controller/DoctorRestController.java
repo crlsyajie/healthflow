@@ -15,6 +15,53 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
+// Simple DTO to avoid circular references in JSON serialization
+class AppointmentDTO {
+    private Long id;
+    private String patientFirstName;
+    private String patientLastName;
+    private Long patientId;
+    private String doctorFirstName;
+    private String doctorLastName;
+    private Long doctorId;
+    private LocalDateTime appointmentTime;
+    private String status;
+    private String reason;
+    private String notes;
+
+    public AppointmentDTO(Appointment appointment) {
+        this.id = appointment.getId();
+        if (appointment.getPatient() != null) {
+            this.patientFirstName = appointment.getPatient().getFirstName();
+            this.patientLastName = appointment.getPatient().getLastName();
+            this.patientId = appointment.getPatient().getId();
+        }
+        if (appointment.getDoctor() != null) {
+            this.doctorFirstName = appointment.getDoctor().getFirstName();
+            this.doctorLastName = appointment.getDoctor().getLastName();
+            this.doctorId = appointment.getDoctor().getId();
+        }
+        this.appointmentTime = appointment.getAppointmentTime();
+        this.status = appointment.getStatus().name();
+        this.reason = appointment.getReason();
+        this.notes = appointment.getNotes();
+    }
+
+    // Getters
+    public Long getId() { return id; }
+    public String getPatientFirstName() { return patientFirstName; }
+    public String getPatientLastName() { return patientLastName; }
+    public Long getPatientId() { return patientId; }
+    public String getDoctorFirstName() { return doctorFirstName; }
+    public String getDoctorLastName() { return doctorLastName; }
+    public Long getDoctorId() { return doctorId; }
+    public LocalDateTime getAppointmentTime() { return appointmentTime; }
+    public String getStatus() { return status; }
+    public String getReason() { return reason; }
+    public String getNotes() { return notes; }
+}
 
 @RestController
 @RequestMapping("/api/doctor")
@@ -30,25 +77,86 @@ public class DoctorRestController {
     }
 
     @GetMapping("/appointments/today")
-    public ResponseEntity<List<Appointment>> getTodaysAppointments(Authentication authentication) {
+    public ResponseEntity<List<AppointmentDTO>> getTodaysAppointments(Authentication authentication) {
         Doctor doctor = doctorService.getDoctorByUsername(authentication.getName());
-        return ResponseEntity.ok(doctorService.getTodaysAppointments(doctor));
+        List<AppointmentDTO> appointmentDTOs = doctorService.getTodaysAppointments(doctor).stream()
+                .map(AppointmentDTO::new)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(appointmentDTOs);
     }
 
     @GetMapping("/appointments/pending")
-    public ResponseEntity<List<Appointment>> getPendingAppointments(Authentication authentication) {
+    public ResponseEntity<List<AppointmentDTO>> getPendingAppointments(Authentication authentication) {
         Doctor doctor = doctorService.getDoctorByUsername(authentication.getName());
-        return ResponseEntity.ok(doctorService.getPendingAppointments(doctor));
+        List<AppointmentDTO> appointmentDTOs = doctorService.getPendingAppointments(doctor).stream()
+                .map(AppointmentDTO::new)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(appointmentDTOs);
     }
 
     @GetMapping("/appointments/period")
-    public ResponseEntity<List<Appointment>> getAppointmentsForPeriod(
+    public ResponseEntity<List<AppointmentDTO>> getAppointmentsForPeriod(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             Authentication authentication) {
 
         Doctor doctor = doctorService.getDoctorByUsername(authentication.getName());
-        return ResponseEntity.ok(doctorService.getAppointmentsForPeriod(doctor, startDate, endDate));
+        List<Appointment> appointments = doctorService.getAppointmentsForPeriod(doctor, startDate, endDate);
+
+        // Convert entities to DTOs to avoid circular references
+        List<AppointmentDTO> appointmentDTOs = appointments.stream()
+                .map(AppointmentDTO::new)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(appointmentDTOs);
+    }
+
+    @GetMapping("/appointments/past")
+    public ResponseEntity<List<AppointmentDTO>> getPastAppointments(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            Authentication authentication) {
+
+        Doctor doctor = doctorService.getDoctorByUsername(authentication.getName());
+
+        // Get appointments for the period
+        List<Appointment> appointments = doctorService.getAppointmentsForPeriod(doctor, startDate, endDate);
+
+        // Filter to only completed or no-show appointments
+        List<Appointment> pastAppointments = appointments.stream()
+                .filter(a -> a.getStatus() == AppointmentStatus.COMPLETED || a.getStatus() == AppointmentStatus.NO_SHOW)
+                .collect(Collectors.toList());
+
+        // Convert to DTOs
+        List<AppointmentDTO> appointmentDTOs = pastAppointments.stream()
+                .map(AppointmentDTO::new)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(appointmentDTOs);
+    }
+
+    @GetMapping("/appointments/cancelled")
+    public ResponseEntity<List<AppointmentDTO>> getCancelledAppointments(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            Authentication authentication) {
+
+        Doctor doctor = doctorService.getDoctorByUsername(authentication.getName());
+
+        // Get appointments for the period
+        List<Appointment> appointments = doctorService.getAppointmentsForPeriod(doctor, startDate, endDate);
+
+        // Filter to only cancelled appointments
+        List<Appointment> cancelledAppointments = appointments.stream()
+                .filter(a -> a.getStatus() == AppointmentStatus.CANCELLED)
+                .collect(Collectors.toList());
+
+        // Convert to DTOs
+        List<AppointmentDTO> appointmentDTOs = cancelledAppointments.stream()
+                .map(AppointmentDTO::new)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(appointmentDTOs);
     }
 
     @GetMapping("/calendar/weekly")
@@ -102,7 +210,7 @@ public class DoctorRestController {
         return ResponseEntity.ok(doctorService.getNotifications(doctor));
     }
 
-    @PutMapping("/profile")
+    @PutMapping("/update-doctor")
     public ResponseEntity<Doctor> updateProfile(
             @RequestBody Doctor updatedDoctor,
             Authentication authentication) {
@@ -116,8 +224,8 @@ public class DoctorRestController {
         doctor.setBio(updatedDoctor.getBio());
         doctor.setSpecialization(updatedDoctor.getSpecialization());
 
-        // Save the updated doctor
-        // A separate service method could be implemented for this
+        // Save the updated doctor using the service method
+        doctor = doctorService.updateDoctorInfo(doctor);
         return ResponseEntity.ok(doctor);
     }
 }

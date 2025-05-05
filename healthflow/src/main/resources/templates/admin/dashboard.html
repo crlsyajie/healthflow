@@ -110,7 +110,7 @@
                         </div>
                         <i class="bi bi-hourglass-split fs-1"></i>
                     </div>
-                    <a href="/admin/appointments?status=SCHEDULED" class="text-white stretched-link">View Details</a>
+                    <a href="/admin/appointments?status=PENDING" class="text-white stretched-link">View Details</a>
                 </div>
             </div>
         </div>
@@ -130,9 +130,9 @@
                             <div class="d-flex justify-content-between">
                                 <div>
                                         <span class="badge"
-                                              th:classappend="${appointment.status == T(com.example.healthflow.model.AppointmentStatus).SCHEDULED ? 'bg-warning' :
+                                              th:classappend="${appointment.status == T(com.example.healthflow.model.AppointmentStatus).PENDING ? 'bg-warning' :
                                                                appointment.status == T(com.example.healthflow.model.AppointmentStatus).COMPLETED ? 'bg-success' :
-                                                               appointment.status == T(com.example.healthflow.model.AppointmentStatus).CANCELED ? 'bg-danger' : 'bg-info'}"
+                                                               appointment.status == T(com.example.healthflow.model.AppointmentStatus).CANCELLED ? 'bg-danger' : 'bg-info'}"
                                               th:text="${appointment.status}"></span>
                                     <strong th:text="${appointment.patient.firstName + ' ' + appointment.patient.lastName}"></strong> with
                                     Dr. <strong th:text="${appointment.doctor.lastName}"></strong>
@@ -203,7 +203,7 @@
 
 <footer class="mt-5 py-3 bg-light">
     <div class="container text-center">
-        <p class="mb-0">© 2023 HealthFlow Admin Panel. All rights reserved.</p>
+        <p class="mb-0">© 2025 HealthFlow Admin Panel. All rights reserved.</p>
     </div>
 </footer>
 

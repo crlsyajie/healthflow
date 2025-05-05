@@ -161,13 +161,28 @@
                     </form>
                 </div>
             </div>
+
+            <div class="card mt-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="card-title mb-0">Debug Tools</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="button" id="testApiBtn" class="btn btn-outline-info">Test API Access</button>
+                        <button type="button" id="directUpdateBtn" class="btn btn-outline-warning">Direct API Update</button>
+                    </div>
+                    <div id="apiResponse" class="mt-3 p-2 bg-light" style="display: none;">
+                        <pre id="apiResponseText" class="mb-0" style="white-space: pre-wrap;"></pre>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <footer class="mt-5 py-3 bg-light">
     <div class="container text-center">
-        <p class="mb-0">© 2023 HealthFlow. All rights reserved.</p>
+        <p class="mb-0">© 2025 HealthFlow. All rights reserved.</p>
     </div>
 </footer>
 
@@ -175,10 +190,63 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     $(document).ready(function() {
+        // Test API button
+        $('#testApiBtn').on('click', function() {
+            $('#apiResponse').hide();
+            $.ajax({
+                url: '/api/patient/test',
+                type: 'GET',
+                success: function(response) {
+                    console.log('API test successful:', response);
+                    $('#apiResponseText').text('SUCCESS: ' + response);
+                    $('#apiResponse').show();
+                },
+                error: function(xhr, status, error) {
+                    console.error('API test error:', xhr.status, xhr.responseText);
+                    $('#apiResponseText').text('ERROR: ' + xhr.status + ' ' + xhr.responseText);
+                    $('#apiResponse').show();
+                }
+            });
+        });
+
+        // Direct API update button
+        $('#directUpdateBtn').on('click', function() {
+            $('#apiResponse').hide();
+
+            // Create a simplified test data object
+            const testData = {
+                firstName: $('#firstName').val() || 'Test',
+                lastName: $('#lastName').val() || 'User',
+                dateOfBirth: $('#dateOfBirth').val() || '1990-01-01',
+                gender: $('#gender').val() || 'MALE',
+                phoneNumber: $('#phoneNumber').val() || '555-1234',
+                address: $('#address').val() || 'Test Address'
+            };
+
+            console.log('Sending direct API update with data:', testData);
+
+            $.ajax({
+                url: '/api/patient/profile',
+                type: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify(testData),
+                success: function(response) {
+                    console.log('Direct API update success:', response);
+                    $('#apiResponseText').text('UPDATE SUCCESS: ' + JSON.stringify(response, null, 2));
+                    $('#apiResponse').show();
+                },
+                error: function(xhr, status, error) {
+                    console.error('Direct API update error:', xhr.status, xhr.responseText);
+                    $('#apiResponseText').text('UPDATE ERROR: ' + xhr.status + ' ' + xhr.responseText);
+                    $('#apiResponse').show();
+                }
+            });
+        });
+
         $('#profileForm').on('submit', function(e) {
             e.preventDefault();
 
-            const updatedProfile = {
+            const formData = {
                 firstName: $('#firstName').val(),
                 lastName: $('#lastName').val(),
                 dateOfBirth: $('#dateOfBirth').val(),
@@ -187,22 +255,27 @@
                 address: $('#address').val()
             };
 
+            console.log("Sending profile update:", formData);
+
             $.ajax({
                 url: '/api/patient/profile',
                 type: 'PUT',
                 contentType: 'application/json',
-                data: JSON.stringify(updatedProfile),
+                data: JSON.stringify(formData),
                 success: function(response) {
+                    console.log("Profile update success:", response);
                     $('#successAlert').show();
                     setTimeout(function() {
                         $('#successAlert').fadeOut();
                     }, 3000);
                 },
-                error: function() {
+                error: function(xhr, status, error) {
+                    console.error("Profile update error:", xhr.status, xhr.responseText);
+                    $('#errorAlert').text(xhr.responseText || "Error updating profile. Please try again.");
                     $('#errorAlert').show();
                     setTimeout(function() {
                         $('#errorAlert').fadeOut();
-                    }, 3000);
+                    }, 5000);
                 }
             });
         });

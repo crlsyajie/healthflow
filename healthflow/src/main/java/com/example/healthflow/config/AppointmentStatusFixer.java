@@ -27,7 +27,7 @@ public class AppointmentStatusFixer implements CommandLineRunner {
 
         try {
             // Get list of appointment status values that need fixing
-            String sql = "SELECT id, status FROM appointments WHERE status IS NULL OR status NOT IN ('SCHEDULED', 'COMPLETED', 'CANCELED', 'CANCELLED', 'RESCHEDULED', 'NO_SHOW', 'PENDING', 'CONFIRMED')";
+            String sql = "SELECT id, status FROM appointments WHERE status IS NULL OR status NOT IN ('PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED', 'RESCHEDULED', 'NO_SHOW', 'UNKNOWN')";
             Query query = entityManager.createNativeQuery(sql);
 
             @SuppressWarnings("unchecked")
@@ -48,10 +48,10 @@ public class AppointmentStatusFixer implements CommandLineRunner {
                         System.out.println("Fixing appointment #" + id + " with status: " + statusValue);
 
                         // Set a default status if current is invalid
-                        appointment.setStatus(AppointmentStatus.SCHEDULED);
+                        appointment.setStatus(AppointmentStatus.PENDING);
                         appointmentRepository.save(appointment);
 
-                        System.out.println("Updated appointment #" + id + " status to: SCHEDULED");
+                        System.out.println("Updated appointment #" + id + " status to: PENDING");
                     }
                 }
             }

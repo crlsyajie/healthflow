@@ -51,3 +51,52 @@ public class PasswordEncoderUtil implements CommandLineRunner {
         }
     }
 }
+
+
+// accounts
+/*
+
+** Patients
+
+
+testpatient
+password
+testpatient@example.com
+
+sakit
+password
+sakit@example.com
+
+patiente
+password
+patiente@example.com
+
+
+** Doctors
+
+testdoctor
+password
+testdoctor@example.com
+
+specialist
+password
+specialist@example.com
+
+cardo
+password
+cardo@example.com
+
+ortho
+password
+ortho@example.com
+
+nero
+password
+nero@example.com
+
+
+
+
+
+
+ */

@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}"/>
   <title>Appointments - HealthFlow</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" th:href="@{/css/styles.css}">
@@ -75,7 +77,7 @@
               <button class="nav-link text-white" id="past-tab" data-bs-toggle="tab" data-bs-target="#past" type="button" role="tab" aria-controls="past" aria-selected="false">Past</button>
             </li>
             <li class="nav-item" role="presentation">
-              <button class="nav-link text-white" id="canceled-tab" data-bs-toggle="tab" data-bs-target="#canceled" type="button" role="tab" aria-controls="canceled" aria-selected="false">Canceled</button>
+              <button class="nav-link text-white" id="cancelled-tab" data-bs-toggle="tab" data-bs-target="#cancelled" type="button" role="tab" aria-controls="cancelled" aria-selected="false">Cancelled</button>
             </li>
           </ul>
         </div>
@@ -102,23 +104,24 @@
                     </td>
                     <td th:text="${appointment.reason != null ? appointment.reason : 'Not specified'}">Checkup</td>
                     <td>
-                      <span th:if="${appointment.status.name() == 'SCHEDULED'}" class="badge bg-primary">Scheduled</span>
+                      <span th:if="${appointment.status.name() == 'PENDING'}" class="badge bg-info">Pending</span>
+                      <span th:if="${appointment.status.name() == 'CONFIRMED'}" class="badge bg-primary">Confirmed</span>
                       <span th:if="${appointment.status.name() == 'COMPLETED'}" class="badge bg-success">Completed</span>
-                      <span th:if="${appointment.status.name() == 'CANCELED'}" class="badge bg-danger">Canceled</span>
+                      <span th:if="${appointment.status.name() == 'CANCELLED'}" class="badge bg-danger">Cancelled</span>
                       <span th:if="${appointment.status.name() == 'RESCHEDULED'}" class="badge bg-info">Rescheduled</span>
                       <span th:if="${appointment.status.name() == 'NO_SHOW'}" class="badge bg-warning">No Show</span>
                     </td>
                     <td>
                       <div class="btn-group">
-                        <form th:if="${appointment.status.name() == 'SCHEDULED'}" th:action="@{/doctor/appointments/{id}/status(id=${appointment.id})}" method="post" style="display:inline;">
+                        <form th:if="${appointment.status.name() == 'PENDING' || appointment.status.name() == 'CONFIRMED'}" th:action="@{/doctor/appointments/{id}/status(id=${appointment.id})}" method="post" style="display:inline;">
                           <input type="hidden" name="status" value="COMPLETED">
                           <button type="submit" class="btn btn-sm btn-success">Complete</button>
                         </form>
-                        <form th:if="${appointment.status.name() == 'SCHEDULED'}" th:action="@{/doctor/appointments/{id}/status(id=${appointment.id})}" method="post" style="display:inline; margin-left: 5px;">
+                        <form th:if="${appointment.status.name() == 'PENDING' || appointment.status.name() == 'CONFIRMED'}" th:action="@{/doctor/appointments/{id}/status(id=${appointment.id})}" method="post" style="display:inline; margin-left: 5px;">
                           <input type="hidden" name="status" value="NO_SHOW">
                           <button type="submit" class="btn btn-sm btn-warning">No Show</button>
                         </form>
-                        <button th:if="${appointment.status.name() == 'SCHEDULED'}" type="button" class="btn btn-sm btn-primary ms-1" data-bs-toggle="modal" th:data-bs-target="'#notesModal' + ${appointment.id}">
+                        <button th:if="${appointment.status.name() == 'PENDING' || appointment.status.name() == 'CONFIRMED'}" type="button" class="btn btn-sm btn-primary ms-1" data-bs-toggle="modal" th:data-bs-target="'#notesModal' + ${appointment.id}">
                           Add Notes
                         </button>
                       </div>
@@ -199,31 +202,31 @@
               </div>
               <div class="table-responsive" id="pastAppointmentsTable">
                 <!-- This will be populated via AJAX -->
-                <p class="text-center py-3">Select a date range to view past appointments.</p>
+                <p class="text-center py-3">Click the Filter button to view past appointments.</p>
               </div>
             </div>
 
-            <!-- Canceled Appointments Tab -->
-            <div class="tab-pane fade" id="canceled" role="tabpanel" aria-labelledby="canceled-tab">
+            <!-- Cancelled Appointments Tab -->
+            <div class="tab-pane fade" id="cancelled" role="tabpanel" aria-labelledby="cancelled-tab">
               <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5>Canceled Appointments</h5>
-                <form class="row row-cols-lg-auto g-3 align-items-center" id="canceledDateFilterForm">
+                <h5>Cancelled Appointments</h5>
+                <form class="row row-cols-lg-auto g-3 align-items-center" id="cancelledDateFilterForm">
                   <div class="col-12">
-                    <label class="visually-hidden" for="canceledStartDate">Start Date</label>
-                    <input type="date" class="form-control form-control-sm" id="canceledStartDate" name="startDate">
+                    <label class="visually-hidden" for="cancelledStartDate">Start Date</label>
+                    <input type="date" class="form-control form-control-sm" id="cancelledStartDate" name="startDate" title="Start date for filtering cancelled appointments">
                   </div>
                   <div class="col-12">
-                    <label class="visually-hidden" for="canceledEndDate">End Date</label>
-                    <input type="date" class="form-control form-control-sm" id="canceledEndDate" name="endDate">
+                    <label class="visually-hidden" for="cancelledEndDate">End Date</label>
+                    <input type="date" class="form-control form-control-sm" id="cancelledEndDate" name="endDate" title="End date for filtering cancelled appointments">
                   </div>
                   <div class="col-12">
                     <button type="submit" class="btn btn-primary btn-sm">Filter</button>
                   </div>
                 </form>
               </div>
-              <div class="table-responsive" id="canceledAppointmentsTable">
+              <div class="table-responsive" id="cancelledAppointmentsTable">
                 <!-- This will be populated via AJAX -->
-                <p class="text-center py-3">Select a date range to view canceled appointments.</p>
+                <p class="text-center py-3">Click the Filter button to view cancelled appointments.</p>
               </div>
             </div>
           </div>
@@ -235,7 +238,7 @@
 
 <footer class="mt-5 py-3 bg-light">
   <div class="container text-center">
-    <p class="mb-0">© 2023 HealthFlow. All rights reserved.</p>
+    <p class="mb-0">© 2025 HealthFlow. All rights reserved.</p>
   </div>
 </footer>
 
@@ -243,10 +246,35 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
   $(document).ready(function() {
+    // CSRF token handling for AJAX (only if CSRF is enabled)
+    const token = $("meta[name='_csrf']").attr("content");
+    const header = $("meta[name='_csrf_header']").attr("content");
+
+    if (token && header) {
+      console.log("CSRF protection enabled, setting up token handling");
+      $(document).ajaxSend(function(e, xhr, options) {
+        xhr.setRequestHeader(header, token);
+      });
+    } else {
+      console.log("CSRF protection appears to be disabled");
+    }
+
     // Set today's date as default for date filters
     const today = new Date().toISOString().split('T')[0];
+    const oneMonthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const oneMonthAhead = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // Set default values for upcoming appointments
     $('#startDate').val(today);
-    $('#endDate').val(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+    $('#endDate').val(oneMonthAhead);
+
+    // Set default values for past appointments (last month to today)
+    $('#pastStartDate').val(oneMonthAgo);
+    $('#pastEndDate').val(today);
+
+    // Set default values for canceled appointments (last month to one month ahead)
+    $('#cancelledStartDate').val(oneMonthAgo);
+    $('#cancelledEndDate').val(oneMonthAhead);
 
     // Handle upcoming appointments filter
     $('#dateFilterForm').on('submit', function(e) {
@@ -261,37 +289,48 @@
     });
 
     // Handle canceled appointments filter
-    $('#canceledDateFilterForm').on('submit', function(e) {
+    $('#cancelledDateFilterForm').on('submit', function(e) {
       e.preventDefault();
-      fetchAppointments('canceled');
+      fetchAppointments('cancelled');
     });
 
     // Fetch appointments for selected date range and appointment type
     function fetchAppointments(type) {
-      let startDate, endDate, tableId;
+      let startDate, endDate, tableId, endpoint;
 
       if (type === 'upcoming') {
         startDate = $('#startDate').val();
         endDate = $('#endDate').val();
         tableId = 'upcomingAppointmentsTable';
+        endpoint = '/api/doctor/appointments/period';
       } else if (type === 'past') {
         startDate = $('#pastStartDate').val();
         endDate = $('#pastEndDate').val();
         tableId = 'pastAppointmentsTable';
-      } else if (type === 'canceled') {
-        startDate = $('#canceledStartDate').val();
-        endDate = $('#canceledEndDate').val();
-        tableId = 'canceledAppointmentsTable';
+        endpoint = '/api/doctor/appointments/past';
+      } else if (type === 'cancelled') {
+        startDate = $('#cancelledStartDate').val();
+        endDate = $('#cancelledEndDate').val();
+        tableId = 'cancelledAppointmentsTable';
+        endpoint = '/api/doctor/appointments/cancelled';
       }
 
+      // Show loading message
+      $(`#${tableId}`).html('<p class="text-center">Loading appointments...</p>');
+
+      console.log(`Fetching ${type} appointments from ${startDate} to ${endDate}`);
+
       $.ajax({
-        url: '/api/doctor/appointments/period',
+        url: endpoint,
         type: 'GET',
+        contentType: 'application/json',
         data: {
           startDate: startDate,
           endDate: endDate
         },
         success: function(appointments) {
+          console.log('Appointments received:', appointments);
+
           let tableHtml = '<table class="table table-hover">';
           tableHtml += '<thead><tr>';
           tableHtml += '<th>Date</th>';
@@ -303,21 +342,18 @@
           tableHtml += '</tr></thead>';
           tableHtml += '<tbody>';
 
-          // Filter appointments based on type
+          // Only filter for upcoming, as past and cancelled now come pre-filtered from backend
           let filteredAppointments = [];
           if (type === 'upcoming') {
             filteredAppointments = appointments.filter(a =>
-                    a.status === 'SCHEDULED' || a.status === 'RESCHEDULED'
+                    a.status === 'PENDING' || a.status === 'CONFIRMED' || a.status === 'RESCHEDULED'
             );
-          } else if (type === 'past') {
-            filteredAppointments = appointments.filter(a =>
-                    a.status === 'COMPLETED' || a.status === 'NO_SHOW'
-            );
-          } else if (type === 'canceled') {
-            filteredAppointments = appointments.filter(a =>
-                    a.status === 'CANCELED'
-            );
+          } else {
+            // For past and canceled, use all appointments as they're already filtered
+            filteredAppointments = appointments;
           }
+
+          console.log(`Displaying ${filteredAppointments.length} ${type} appointments`);
 
           if (filteredAppointments.length === 0) {
             tableHtml += '<tr><td colspan="6" class="text-center">No appointments found for the selected date range.</td></tr>';
@@ -327,17 +363,19 @@
               tableHtml += '<tr>';
               tableHtml += `<td>${appointmentDate.toLocaleDateString()}</td>`;
               tableHtml += `<td>${appointmentDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>`;
-              tableHtml += `<td><a href="/doctor/patients/${appointment.patient.id}">${appointment.patient.firstName} ${appointment.patient.lastName}</a></td>`;
+              tableHtml += `<td><a href="/doctor/patients/${appointment.patientId}">${appointment.patientFirstName} ${appointment.patientLastName}</a></td>`;
               tableHtml += `<td>${appointment.reason || 'Not specified'}</td>`;
 
               // Status badge
               let statusBadge = '';
-              if (appointment.status === 'SCHEDULED') {
-                statusBadge = '<span class="badge bg-primary">Scheduled</span>';
+              if (appointment.status === 'PENDING') {
+                statusBadge = '<span class="badge bg-info">Pending</span>';
+              } else if (appointment.status === 'CONFIRMED') {
+                statusBadge = '<span class="badge bg-primary">Confirmed</span>';
               } else if (appointment.status === 'COMPLETED') {
                 statusBadge = '<span class="badge bg-success">Completed</span>';
-              } else if (appointment.status === 'CANCELED') {
-                statusBadge = '<span class="badge bg-danger">Canceled</span>';
+              } else if (appointment.status === 'CANCELLED') {
+                statusBadge = '<span class="badge bg-danger">Cancelled</span>';
               } else if (appointment.status === 'RESCHEDULED') {
                 statusBadge = '<span class="badge bg-info">Rescheduled</span>';
               } else if (appointment.status === 'NO_SHOW') {
@@ -347,7 +385,7 @@
 
               // Actions
               tableHtml += '<td>';
-              if (appointment.status === 'SCHEDULED') {
+              if (appointment.status === 'PENDING' || appointment.status === 'CONFIRMED') {
                 tableHtml += `<form action="/doctor/appointments/${appointment.id}/status" method="post" style="display:inline;">`;
                 tableHtml += '<input type="hidden" name="status" value="COMPLETED">';
                 tableHtml += '<button type="submit" class="btn btn-sm btn-success">Complete</button>';
@@ -369,8 +407,16 @@
           tableHtml += '</tbody></table>';
           $(`#${tableId}`).html(tableHtml);
         },
-        error: function() {
-          $(`#${tableId}`).html('<p class="text-danger">Error fetching appointments. Please try again.</p>');
+        error: function(xhr, status, error) {
+          console.error('Error fetching appointments:', status, error);
+          console.error('Response:', xhr.responseText);
+          $(`#${tableId}`).html(`
+                            <div class="alert alert-danger">
+                                <p><strong>Error fetching appointments. Please try again.</strong></p>
+                                <p>Details: ${error}</p>
+                                <p>Status: ${xhr.status} ${xhr.statusText}</p>
+                            </div>
+                        `);
         }
       });
     }
@@ -381,9 +427,23 @@
       if (targetId === 'upcoming-tab') {
         fetchAppointments('upcoming');
       } else if (targetId === 'past-tab') {
+        // Set date range to last 30 days by default if not set
+        if (!$('#pastStartDate').val()) {
+          $('#pastStartDate').val(oneMonthAgo);
+        }
+        if (!$('#pastEndDate').val()) {
+          $('#pastEndDate').val(today);
+        }
         fetchAppointments('past');
-      } else if (targetId === 'canceled-tab') {
-        fetchAppointments('canceled');
+      } else if (targetId === 'cancelled-tab') {
+        // Set date range to last 30 days to next 30 days by default if not set
+        if (!$('#cancelledStartDate').val()) {
+          $('#cancelledStartDate').val(oneMonthAgo);
+        }
+        if (!$('#cancelledEndDate').val()) {
+          $('#cancelledEndDate').val(oneMonthAhead);
+        }
+        fetchAppointments('cancelled');
       }
     });
   });

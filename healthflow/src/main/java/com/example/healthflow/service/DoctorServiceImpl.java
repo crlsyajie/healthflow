@@ -1,14 +1,21 @@
 package com.example.healthflow.service;
 
-import com.example.healthflow.model.*;
+import com.example.healthflow.model.Appointment;
+import com.example.healthflow.model.AppointmentStatus;
+import com.example.healthflow.model.Department;
+import com.example.healthflow.model.Doctor;
+import com.example.healthflow.model.Patient;
+import com.example.healthflow.model.User;
 import com.example.healthflow.repository.AppointmentRepository;
 import com.example.healthflow.repository.DoctorRepository;
 import com.example.healthflow.repository.PatientRepository;
 import com.example.healthflow.repository.UserRepository;
 import com.example.healthflow.repository.DepartmentRepository;
+import com.example.healthflow.repository.NotificationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -17,6 +24,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class DoctorServiceImpl implements DoctorService {
 
     @Autowired
@@ -33,6 +41,9 @@ public class DoctorServiceImpl implements DoctorService {
 
     @Autowired
     private DepartmentRepository departmentRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
 
     @Override
     public Doctor getDoctorByUsername(String username) {
@@ -76,26 +87,47 @@ public class DoctorServiceImpl implements DoctorService {
     @Override
     @Transactional
     public boolean removeDoctor(Long id) {
-        Doctor doctor = doctorRepository.findById(id).orElse(null);
-        if (doctor == null) {
+        try {
+            Doctor doctor = doctorRepository.findById(id).orElse(null);
+            if (doctor == null) {
+                return false;
+            }
+
+            // Get all appointments for this doctor
+            List<Appointment> allAppointments = appointmentRepository.findByDoctor(doctor);
+
+            // Check if doctor has any pending appointments
+            boolean hasPendingAppointments = allAppointments.stream()
+                    .anyMatch(appointment -> appointment.getStatus() == AppointmentStatus.PENDING);
+
+            if (hasPendingAppointments) {
+                return false; // Can't remove doctor with pending appointments
+            }
+
+            // Delete all notifications for appointments first
+            for (Appointment appointment : allAppointments) {
+                notificationRepository.deleteByAppointmentId(appointment.getId());
+            }
+
+            // Delete all appointments
+            appointmentRepository.deleteAll(allAppointments);
+
+            // Get the user associated with the doctor before deleting the doctor
+            User user = doctor.getUser();
+
+            // Delete the doctor record
+            doctorRepository.delete(doctor);
+
+            // Finally delete the associated user account
+            if (user != null) {
+                userRepository.deleteById(user.getId());
+            }
+
+            return true;
+        } catch (Exception e) {
+            log.error("Error removing doctor {}: {}", id, e.getMessage());
             return false;
         }
-
-        // Check if doctor has appointments (active or completed)
-        List<Appointment> activeAppointments = appointmentRepository.findByDoctorAndStatus(doctor, AppointmentStatus.SCHEDULED);
-        if (!activeAppointments.isEmpty()) {
-            return false; // Can't remove doctor with active appointments
-        }
-
-        // Option 1: Delete doctor and related records
-        doctorRepository.delete(doctor);
-
-        // Option 2: Just disable the doctor and user accounts (safer)
-        // User user = doctor.getUser();
-        // user.setEnabled(false);
-        // userRepository.save(user);
-
-        return true;
     }
 
     @Override
@@ -116,7 +148,7 @@ public class DoctorServiceImpl implements DoctorService {
     public List<Appointment> getPendingAppointments(Doctor doctor) {
         LocalDateTime now = LocalDateTime.now();
         return appointmentRepository.findByDoctorAndAppointmentTimeBetween(doctor, now, now.plusMonths(1)).stream()
-                .filter(appointment -> appointment.getStatus() == AppointmentStatus.SCHEDULED)
+                .filter(appointment -> appointment.getStatus() == AppointmentStatus.PENDING)
                 .collect(Collectors.toList());
     }
 
@@ -192,17 +224,23 @@ public class DoctorServiceImpl implements DoctorService {
                     // New bookings created within the last 24 hours
                     if (appointment.getCreatedAt() != null &&
                             appointment.getCreatedAt().isAfter(yesterday) &&
-                            appointment.getStatus() == AppointmentStatus.SCHEDULED) {
+                            appointment.getStatus() == AppointmentStatus.PENDING) {
                         return true;
                     }
 
                     // Recently canceled appointments
-                    if (appointment.getStatus() == AppointmentStatus.CANCELED) {
+                    if (appointment.getStatus() == AppointmentStatus.CANCELLED) {
                         return true;
                     }
 
                     return false;
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public Doctor updateDoctorInfo(Doctor doctor) {
+        return doctorRepository.save(doctor);
     }
 }

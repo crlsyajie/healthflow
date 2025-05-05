@@ -42,7 +42,7 @@
 <div class="container mt-4">
     <div class="row mb-4">
         <div class="col-md-12">
-            <h1>Welcome, Dr. <span th:text="${doctor.lastName}">Smith</span>!</h1>
+            <h1>Welcome, Dr. <span th:text="${doctor != null ? doctor.lastName : 'Doctor'}">Smith</span>!</h1>
             <p class="lead">Here's your overview for today</p>
         </div>
     </div>
@@ -54,10 +54,10 @@
                     <h5 class="card-title mb-0">Today's Schedule</h5>
                 </div>
                 <div class="card-body">
-                    <div th:if="${todaysAppointments.empty}" class="text-center py-3">
+                    <div th:if="${todaysAppointments == null || todaysAppointments.empty}" class="text-center py-3">
                         <p class="mb-0">No appointments scheduled for today.</p>
                     </div>
-                    <div th:unless="${todaysAppointments.empty}" class="table-responsive">
+                    <div th:unless="${todaysAppointments == null || todaysAppointments.empty}" class="table-responsive">
                         <table class="table table-hover">
                             <thead>
                             <tr>
@@ -69,23 +69,28 @@
                             </thead>
                             <tbody>
                             <tr th:each="appointment : ${todaysAppointments}">
-                                <td th:text="${#temporals.format(appointment.appointmentTime, 'hh:mm a')}">09:00 AM</td>
-                                <td>
-                                    <a th:href="@{/doctor/patients/{id}(id=${appointment.patient.id})}" th:text="${appointment.patient.firstName + ' ' + appointment.patient.lastName}">John Doe</a>
+                                <td th:text="${appointment.appointmentTime != null ? #temporals.format(appointment.appointmentTime, 'hh:mm a') : 'N/A'}">09:00 AM</td>
+                                <td th:if="${appointment.patient != null}">
+                                    <a th:href="@{/doctor/patients/{id}(id=${appointment.patient.id})}"
+                                       th:text="${appointment.patient.firstName + ' ' + appointment.patient.lastName}">John Doe</a>
+                                </td>
+                                <td th:unless="${appointment.patient != null}">
+                                    Unknown Patient
                                 </td>
                                 <td>
-                                    <span th:if="${appointment.status.name() == 'SCHEDULED'}" class="badge bg-primary">Scheduled</span>
-                                    <span th:if="${appointment.status.name() == 'COMPLETED'}" class="badge bg-success">Completed</span>
-                                    <span th:if="${appointment.status.name() == 'CANCELED'}" class="badge bg-danger">Canceled</span>
-                                    <span th:if="${appointment.status.name() == 'NO_SHOW'}" class="badge bg-warning">No Show</span>
+                                    <span th:if="${appointment.status != null && appointment.status.name() == 'PENDING'}" class="badge bg-primary">Pending</span>
+                                    <span th:if="${appointment.status != null && appointment.status.name() == 'COMPLETED'}" class="badge bg-success">Completed</span>
+                                    <span th:if="${appointment.status != null && appointment.status.name() == 'CANCELLED'}" class="badge bg-danger">Cancelled</span>
+                                    <span th:if="${appointment.status != null && appointment.status.name() == 'NO_SHOW'}" class="badge bg-warning">No Show</span>
+                                    <span th:if="${appointment.status == null}" class="badge bg-secondary">Unknown</span>
                                 </td>
                                 <td>
-                                    <div class="btn-group">
-                                        <form th:if="${appointment.status.name() == 'SCHEDULED'}" th:action="@{/doctor/appointments/{id}/status(id=${appointment.id})}" method="post" style="display:inline;">
+                                    <div class="btn-group" th:if="${appointment.status != null && appointment.status.name() == 'PENDING'}">
+                                        <form th:action="@{/doctor/appointments/{id}/status(id=${appointment.id})}" method="post" style="display:inline;">
                                             <input type="hidden" name="status" value="COMPLETED">
                                             <button type="submit" class="btn btn-sm btn-success">Complete</button>
                                         </form>
-                                        <form th:if="${appointment.status.name() == 'SCHEDULED'}" th:action="@{/doctor/appointments/{id}/status(id=${appointment.id})}" method="post" style="display:inline; margin-left: 5px;">
+                                        <form th:action="@{/doctor/appointments/{id}/status(id=${appointment.id})}" method="post" style="display:inline; margin-left: 5px;">
                                             <input type="hidden" name="status" value="NO_SHOW">
                                             <button type="submit" class="btn btn-sm btn-warning">No Show</button>
                                         </form>
@@ -105,27 +110,27 @@
                     <h5 class="card-title mb-0">Notifications</h5>
                 </div>
                 <div class="card-body">
-                    <div th:if="${notifications.empty}" class="text-center py-3">
+                    <div th:if="${notifications == null || notifications.empty}" class="text-center py-3">
                         <p class="mb-0">No new notifications.</p>
                     </div>
-                    <div th:unless="${notifications.empty}" class="notification-list">
+                    <div th:unless="${notifications == null || notifications.empty}" class="notification-list">
                         <div th:each="notification : ${notifications}" class="notification-item border-bottom py-2">
-                            <div th:if="${notification.status.name() == 'SCHEDULED'}" class="d-flex align-items-center">
+                            <div th:if="${notification.status != null && notification.status.name() == 'PENDING'}" class="d-flex align-items-center">
                                 <div class="flex-shrink-0">
                                     <span class="badge bg-primary">New</span>
                                 </div>
-                                <div class="flex-grow-1 ms-3">
+                                <div class="flex-grow-1 ms-3" th:if="${notification.patient != null}">
                                     <p class="mb-0">New appointment with <strong th:text="${notification.patient.firstName + ' ' + notification.patient.lastName}">John Doe</strong></p>
-                                    <small class="text-muted" th:text="${#temporals.format(notification.appointmentTime, 'MMM dd, yyyy hh:mm a')}">Jan 1, 2023 09:00 AM</small>
+                                    <small class="text-muted" th:text="${notification.appointmentTime != null ? #temporals.format(notification.appointmentTime, 'MMM dd, yyyy hh:mm a') : 'Unknown date'}">Jan 1, 2023 09:00 AM</small>
                                 </div>
                             </div>
-                            <div th:if="${notification.status.name() == 'CANCELED'}" class="d-flex align-items-center">
+                            <div th:if="${notification.status != null && notification.status.name() == 'CANCELLED'}" class="d-flex align-items-center">
                                 <div class="flex-shrink-0">
-                                    <span class="badge bg-danger">Canceled</span>
+                                    <span class="badge bg-danger">Cancelled</span>
                                 </div>
-                                <div class="flex-grow-1 ms-3">
-                                    <p class="mb-0"><strong th:text="${notification.patient.firstName + ' ' + notification.patient.lastName}">John Doe</strong> canceled their appointment</p>
-                                    <small class="text-muted" th:text="${#temporals.format(notification.appointmentTime, 'MMM dd, yyyy hh:mm a')}">Jan 1, 2023 09:00 AM</small>
+                                <div class="flex-grow-1 ms-3" th:if="${notification.patient != null}">
+                                    <p class="mb-0"><strong th:text="${notification.patient.firstName + ' ' + notification.patient.lastName}">John Doe</strong> cancelled their appointment</p>
+                                    <small class="text-muted" th:text="${notification.appointmentTime != null ? #temporals.format(notification.appointmentTime, 'MMM dd, yyyy hh:mm a') : 'Unknown date'}">Jan 1, 2023 09:00 AM</small>
                                 </div>
                             </div>
                         </div>
@@ -138,15 +143,15 @@
                     <h5 class="card-title mb-0">Pending Appointments</h5>
                 </div>
                 <div class="card-body">
-                    <div th:if="${pendingAppointments.empty}" class="text-center py-3">
+                    <div th:if="${pendingAppointments == null || pendingAppointments.empty}" class="text-center py-3">
                         <p class="mb-0">No pending appointments.</p>
                     </div>
-                    <div th:unless="${pendingAppointments.empty}" class="pending-list">
+                    <div th:unless="${pendingAppointments == null || pendingAppointments.empty}" class="pending-list">
                         <div th:each="appointment : ${pendingAppointments}" class="pending-item border-bottom py-2">
-                            <div class="d-flex justify-content-between">
+                            <div class="d-flex justify-content-between" th:if="${appointment.patient != null}">
                                 <div>
                                     <p class="mb-0"><strong th:text="${appointment.patient.firstName + ' ' + appointment.patient.lastName}">John Doe</strong></p>
-                                    <small class="text-muted" th:text="${#temporals.format(appointment.appointmentTime, 'MMM dd, yyyy hh:mm a')}">Jan 1, 2023 09:00 AM</small>
+                                    <small class="text-muted" th:text="${appointment.appointmentTime != null ? #temporals.format(appointment.appointmentTime, 'MMM dd, yyyy hh:mm a') : 'Unknown date'}">Jan 1, 2023 09:00 AM</small>
                                 </div>
                                 <div>
                                     <a th:href="@{/doctor/patients/{id}(id=${appointment.patient.id})}" class="btn btn-sm btn-outline-primary">View</a>
@@ -196,7 +201,7 @@
 
 <footer class="mt-5 py-3 bg-light">
     <div class="container text-center">
-        <p class="mb-0">© 2023 HealthFlow. All rights reserved.</p>
+        <p class="mb-0">© 2025 HealthFlow. All rights reserved.</p>
     </div>
 </footer>
 

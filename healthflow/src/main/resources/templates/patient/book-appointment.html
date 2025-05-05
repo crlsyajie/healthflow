@@ -89,6 +89,7 @@
                             <select class="form-select" id="appointmentTime" name="appointmentTime" required disabled>
                                 <option value="">Select a date first</option>
                             </select>
+                            <small class="form-text text-muted">All times are in 24-hour format.</small>
                         </div>
 
                         <div class="mb-3">
@@ -150,7 +151,7 @@
 
 <footer class="mt-5 py-3 bg-light">
     <div class="container text-center">
-        <p class="mb-0">© 2023 HealthFlow. All rights reserved.</p>
+        <p class="mb-0">© 2025 HealthFlow. All rights reserved.</p>
     </div>
 </footer>
 
@@ -165,9 +166,12 @@
         $.ajax({
             url: '/api/patient/doctors',
             type: 'GET',
+            data: {
+                doctorId: doctorId
+            },
             success: function(doctors) {
-                const doctor = doctors.find(d => d.id == doctorId);
-                if (doctor) {
+                if (doctors && doctors.length > 0) {
+                    const doctor = doctors[0];
                     let html = `
                             <h5>Dr. ${doctor.firstName} ${doctor.lastName}</h5>
                             <p class="text-muted mb-2">${doctor.specialization}</p>
@@ -202,14 +206,12 @@
         });
 
         function fetchAvailableSlots(doctorId, date) {
-            // In a real application, this would call an API to get available time slots
             $('#appointmentTime').html('<option value="">Loading available times...</option>');
 
-            // Simulating API call with timeout
+            // Generate sample time slots (9 AM to 5 PM, 30-minute intervals)
             setTimeout(function() {
                 let options = '<option value="">Select a time</option>';
 
-                // Generate sample time slots (9 AM to 5 PM, 30-minute intervals)
                 for (let hour = 9; hour < 17; hour++) {
                     for (let minute = 0; minute < 60; minute += 30) {
                         const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
@@ -253,10 +255,6 @@
 
         // Form submission handling
         $('form').on('submit', function(e) {
-            // Remove the preventDefault - let the form submit normally
-            // We're no longer combining the date and time here
-
-            // Just validate inputs before submission
             const date = $('#appointmentDate').val();
             const time = $('#appointmentTime').val();
 
@@ -265,9 +263,6 @@
                 alert('Please select both date and time for your appointment');
                 return false;
             }
-
-            // Let the form submit normally - the controller will handle
-            // the separate appointmentDate and appointmentTime fields
         });
     });
 </script>

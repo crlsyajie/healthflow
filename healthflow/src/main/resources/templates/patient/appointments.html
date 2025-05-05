@@ -49,6 +49,40 @@
             <div class="alert alert-success" th:if="${success}" th:text="${success}"></div>
             <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
 
+            <!-- Debugging Info -->
+            <div class="card mb-4" th:if="${upcomingAppointments != null}">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="card-title mb-0">Debugging Information</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Upcoming Appointments from Controller:</h6>
+                    <div th:if="${upcomingAppointments.empty}">
+                        <p class="text-muted">No upcoming appointments found</p>
+                    </div>
+                    <ul th:unless="${upcomingAppointments.empty}">
+                        <li th:each="appt : ${upcomingAppointments}">
+                            <strong>ID:</strong> <span th:text="${appt.id}"></span>,
+                            <strong>Doctor:</strong> <span th:text="${appt.doctor.lastName}"></span>,
+                            <strong>Date:</strong> <span th:text="${#temporals.format(appt.appointmentTime, 'yyyy-MM-dd HH:mm')}"></span>,
+                            <strong>Status:</strong> <span th:text="${appt.status.name()}"></span>
+                        </li>
+                    </ul>
+
+                    <h6 class="mt-3">All Appointments:</h6>
+                    <div th:if="${appointments.empty}">
+                        <p class="text-muted">No appointments found</p>
+                    </div>
+                    <ul th:unless="${appointments.empty}">
+                        <li th:each="appt : ${appointments}">
+                            <strong>ID:</strong> <span th:text="${appt.id}"></span>,
+                            <strong>Doctor:</strong> <span th:text="${appt.doctor.lastName}"></span>,
+                            <strong>Date:</strong> <span th:text="${#temporals.format(appt.appointmentTime, 'yyyy-MM-dd HH:mm')}"></span>,
+                            <strong>Status:</strong> <span th:text="${appt.status.name()}"></span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">Appointment History</h5>
@@ -85,12 +119,13 @@
                                         </tr>
                                         </thead>
                                         <tbody>
-                                        <tr th:each="appointment : ${appointments}" th:if="${appointment.status.name() == 'SCHEDULED' || appointment.status.name() == 'RESCHEDULED'}">
+                                        <tr th:each="appointment : ${appointments}" th:if="${appointment.status.name() == 'PENDING' || appointment.status.name() == 'CONFIRMED' || appointment.status.name() == 'RESCHEDULED'}">
                                             <td th:text="${'Dr. ' + appointment.doctor.firstName + ' ' + appointment.doctor.lastName}">Doctor Name</td>
                                             <td th:text="${appointment.doctor.specialization}">Specialization</td>
                                             <td th:text="${#temporals.format(appointment.appointmentTime, 'MMM dd, yyyy hh:mm a')}">Date & Time</td>
                                             <td>
-                                                <span th:if="${appointment.status.name() == 'SCHEDULED'}" class="badge bg-success">Scheduled</span>
+                                                <span th:if="${appointment.status.name() == 'PENDING'}" class="badge bg-info">Pending</span>
+                                                <span th:if="${appointment.status.name() == 'CONFIRMED'}" class="badge bg-success">Confirmed</span>
                                                 <span th:if="${appointment.status.name() == 'RESCHEDULED'}" class="badge bg-warning">Rescheduled</span>
                                             </td>
                                             <td>
@@ -102,7 +137,7 @@
                                                 </div>
                                             </td>
                                         </tr>
-                                        <tr th:if="${#lists.isEmpty(appointments.?[status.name() == 'SCHEDULED' || status.name() == 'RESCHEDULED'])}">
+                                        <tr th:if="${#lists.isEmpty(appointments.?[status.name() == 'PENDING' || status.name() == 'CONFIRMED' || status.name() == 'RESCHEDULED'])}">
                                             <td colspan="5" class="text-center">No upcoming appointments</td>
                                         </tr>
                                         </tbody>
@@ -149,16 +184,16 @@
                                         </tr>
                                         </thead>
                                         <tbody>
-                                        <tr th:each="appointment : ${appointments}" th:if="${appointment.status.name() == 'CANCELED'}">
+                                        <tr th:each="appointment : ${appointments}" th:if="${appointment.status.name() == 'CANCELLED'}">
                                             <td th:text="${'Dr. ' + appointment.doctor.firstName + ' ' + appointment.doctor.lastName}">Doctor Name</td>
                                             <td th:text="${appointment.doctor.specialization}">Specialization</td>
                                             <td th:text="${#temporals.format(appointment.appointmentTime, 'MMM dd, yyyy hh:mm a')}">Date & Time</td>
                                             <td>
-                                                <span class="badge bg-danger">Canceled</span>
+                                                <span class="badge bg-danger">Cancelled</span>
                                             </td>
                                         </tr>
-                                        <tr th:if="${#lists.isEmpty(appointments.?[status.name() == 'CANCELED'])}">
-                                            <td colspan="4" class="text-center">No canceled appointments</td>
+                                        <tr th:if="${#lists.isEmpty(appointments.?[status.name() == 'CANCELLED'])}">
+                                            <td colspan="4" class="text-center">No cancelled appointments</td>
                                         </tr>
                                         </tbody>
                                     </table>
@@ -174,7 +209,7 @@
 
 <footer class="mt-5 py-3 bg-light">
     <div class="container text-center">
-        <p class="mb-0">© 2023 HealthFlow. All rights reserved.</p>
+        <p class="mb-0">© 2025 HealthFlow. All rights reserved.</p>
     </div>
 </footer>
 
