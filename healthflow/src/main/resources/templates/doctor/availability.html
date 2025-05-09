@@ -323,7 +323,7 @@
 
 <footer class="mt-5 py-3 bg-light">
   <div class="container text-center">
-    <p class="mb-0">© 2025 HealthFlow. All rights reserved.</p>
+    <p class="mb-0">© 2023 HealthFlow. All rights reserved.</p>
   </div>
 </footer>
 
@@ -332,109 +332,11 @@
 <script>
   $(document).ready(function() {
     let currentWeekStart = new Date();
-    currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay()); // Start from Sunday
-
-    updateWeekRange(currentWeekStart);
-    loadAvailabilityGrid(currentWeekStart);
-
-    // Previous week button
-    $('#prevWeek').on('click', function() {
-      currentWeekStart.setDate(currentWeekStart.getDate() - 7);
-      updateWeekRange(currentWeekStart);
-      loadAvailabilityGrid(currentWeekStart);
-    });
-
-    // Next week button
-    $('#nextWeek').on('click', function() {
-      currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-      updateWeekRange(currentWeekStart);
-      loadAvailabilityGrid(currentWeekStart);
-    });
-
-    // Apply working hours form submission
-    $('#workingHoursForm').on('submit', function(e) {
-      e.preventDefault();
-
-      const formData = {
-        sunday: {
-          enabled: $('#sundayEnabled').is(':checked'),
-          start: $('#sundayStart').val(),
-          end: $('#sundayEnd').val()
-        },
-        monday: {
-          enabled: $('#mondayEnabled').is(':checked'),
-          start: $('#mondayStart').val(),
-          end: $('#mondayEnd').val()
-        },
-        tuesday: {
-          enabled: $('#tuesdayEnabled').is(':checked'),
-          start: $('#tuesdayStart').val(),
-          end: $('#tuesdayEnd').val()
-        },
-        wednesday: {
-          enabled: $('#wednesdayEnabled').is(':checked'),
-          start: $('#wednesdayStart').val(),
-          end: $('#wednesdayEnd').val()
-        },
-        thursday: {
-          enabled: $('#thursdayEnabled').is(':checked'),
-          start: $('#thursdayStart').val(),
-          end: $('#thursdayEnd').val()
-        },
-        friday: {
-          enabled: $('#fridayEnabled').is(':checked'),
-          start: $('#fridayStart').val(),
-          end: $('#fridayEnd').val()
-        },
-        saturday: {
-          enabled: $('#saturdayEnabled').is(':checked'),
-          start: $('#saturdayStart').val(),
-          end: $('#saturdayEnd').val()
-        },
-        appointmentDuration: $('#appointmentDuration').val(),
-        breakDuration: $('#breakDuration').val()
-      };
-
-      $.ajax({
-        url: '/api/doctor/working-hours',
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify(formData),
-        success: function(response) {
-          alert('Working hours updated successfully');
-          loadAvailabilityGrid(currentWeekStart);
-        },
-        error: function() {
-          alert('Failed to update working hours. Please try again.');
-        }
-      });
-    });
-
-    // Block time off form submission
-    $('#timeOffForm').on('submit', function(e) {
-      e.preventDefault();
-
-      const formData = {
-        startTime: $('#timeOffStart').val(),
-        endTime: $('#timeOffEnd').val(),
-        reason: $('#timeOffReason').val()
-      };
-
-      $.ajax({
-        url: '/api/doctor/availability',
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify(formData),
-        success: function(response) {
-          alert('Time off blocked successfully');
-          loadAvailabilityGrid(currentWeekStart);
-          $('#timeOffForm')[0].reset();
-        },
-        error: function() {
-          alert('Failed to block time off. Please try again.');
-        }
-      });
-    });
+    currentWeekStart.setHours(0, 0, 0, 0);
+    // Set to beginning of week (Sunday)
+    while (currentWeekStart.getDay() !== 0) {
+      currentWeekStart.setDate(currentWeekStart.getDate() - 1);
+    }
 
     function updateWeekRange(startDate) {
       const endDate = new Date(startDate);
@@ -447,19 +349,28 @@
       $('#weekRange').text(`${startFormatted} - ${endFormatted}`);
     }
 
-    function loadAvailabilityGrid(startDate) {
-      const endDate = new Date(startDate);
-      endDate.setDate(startDate.getDate() + 6);
+    function loadAvailabilityGrid() {
+      const endDate = new Date(currentWeekStart);
+      endDate.setDate(currentWeekStart.getDate() + 6);
 
-      // For demo purposes, we'll create a mock grid
-      // In a real implementation, you'd fetch actual availability data
+      $('#availabilityGrid').html(`
+                    <div class="text-center py-5 w-100">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading availability grid...</p>
+                    </div>
+                `);
+
+      // For demo purposes, we'll use mock data
+      // In a real implementation, you'd fetch from the server
       let gridHtml = '';
 
       // Create day headers
       const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       for (let i = 0; i < 7; i++) {
-        const currentDate = new Date(startDate);
-        currentDate.setDate(startDate.getDate() + i);
+        const currentDate = new Date(currentWeekStart);
+        currentDate.setDate(currentWeekStart.getDate() + i);
 
         gridHtml += `<div class="day-column">`;
         gridHtml += `<div class="day-header">${days[i]}<br>${currentDate.getMonth() + 1}/${currentDate.getDate()}</div>`;
@@ -514,8 +425,39 @@
           $this.removeClass('unavailable').addClass('available');
         }
 
-        // In a real app, you'd send this update to the server
-        console.log(`Toggled ${date} ${time} to ${!available ? 'available' : 'unavailable'}`);
+        // Send update to server
+        updateAvailability(date, time, !available);
+      });
+    }
+
+    function updateAvailability(date, time, available) {
+      // Create start and end times for the slot (30-minute duration)
+      const startDateTime = `${date}T${time}:00`;
+      const [hours, minutes] = time.split(':');
+      const endDateTime = `${date}T${hours}:${(parseInt(minutes) + 30).toString().padStart(2, '0')}:00`;
+
+      // Format the data to be sent
+      const formData = new FormData();
+      formData.append('startTime', startDateTime);
+      formData.append('endTime', endDateTime);
+      formData.append('available', available);
+
+      // Send to server
+      $.ajax({
+        url: '/api/doctor/availability',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function() {
+          console.log(`Updated ${date} ${time} to ${available ? 'available' : 'unavailable'}`);
+        },
+        error: function(xhr) {
+          console.error('Error updating availability:', xhr.responseText);
+          alert('Failed to update availability. Please try again.');
+          // Reload grid to reset any incorrect states
+          loadAvailabilityGrid();
+        }
       });
     }
 
@@ -534,6 +476,121 @@
     function formatDate(date) {
       return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
     }
+
+    // Event handlers
+    $('#prevWeek').on('click', function() {
+      currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+      updateWeekRange(currentWeekStart);
+      loadAvailabilityGrid();
+    });
+
+    $('#nextWeek').on('click', function() {
+      currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+      updateWeekRange(currentWeekStart);
+      loadAvailabilityGrid();
+    });
+
+    // Handle working hours form submission
+    $('#workingHoursForm').on('submit', function(e) {
+      e.preventDefault();
+
+      const formData = {
+        sunday: {
+          enabled: $('#sundayEnabled').is(':checked'),
+          start: $('#sundayStart').val(),
+          end: $('#sundayEnd').val()
+        },
+        monday: {
+          enabled: $('#mondayEnabled').is(':checked'),
+          start: $('#mondayStart').val(),
+          end: $('#mondayEnd').val()
+        },
+        tuesday: {
+          enabled: $('#tuesdayEnabled').is(':checked'),
+          start: $('#tuesdayStart').val(),
+          end: $('#tuesdayEnd').val()
+        },
+        wednesday: {
+          enabled: $('#wednesdayEnabled').is(':checked'),
+          start: $('#wednesdayStart').val(),
+          end: $('#wednesdayEnd').val()
+        },
+        thursday: {
+          enabled: $('#thursdayEnabled').is(':checked'),
+          start: $('#thursdayStart').val(),
+          end: $('#thursdayEnd').val()
+        },
+        friday: {
+          enabled: $('#fridayEnabled').is(':checked'),
+          start: $('#fridayStart').val(),
+          end: $('#fridayEnd').val()
+        },
+        saturday: {
+          enabled: $('#saturdayEnabled').is(':checked'),
+          start: $('#saturdayStart').val(),
+          end: $('#saturdayEnd').val()
+        },
+        settings: {
+          appointmentDuration: $('#appointmentDuration').val(),
+          breakDuration: $('#breakDuration').val()
+        }
+      };
+
+      $.ajax({
+        url: '/api/doctor/working-hours',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(formData),
+        success: function() {
+          alert('Working hours updated successfully');
+          loadAvailabilityGrid();
+        },
+        error: function(xhr) {
+          console.error('Error updating working hours:', xhr.responseText);
+          alert('Failed to update working hours. Please try again.');
+        }
+      });
+    });
+
+    // Handle time off form
+    $('#timeOffForm').on('submit', function(e) {
+      e.preventDefault();
+
+      const startTime = $('#timeOffStart').val();
+      const endTime = $('#timeOffEnd').val();
+      const reason = $('#timeOffReason').val();
+
+      if (!startTime || !endTime) {
+        alert('Please select both start and end dates');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('startTime', startTime);
+      formData.append('endTime', endTime);
+      formData.append('available', false);
+
+      $.ajax({
+        url: '/api/doctor/availability',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function() {
+          alert('Time off scheduled successfully');
+          $('#timeOffForm')[0].reset();
+          loadAvailabilityGrid();
+        },
+        error: function(xhr) {
+          console.error('Error setting time off:', xhr.responseText);
+          alert('Failed to set time off. Please try again.');
+        }
+      });
+    });
+
+    // Initialize
+    updateWeekRange(currentWeekStart);
+    loadAvailabilityGrid();
   });
 </script>
 </body>

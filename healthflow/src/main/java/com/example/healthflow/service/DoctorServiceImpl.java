@@ -4,19 +4,22 @@ import com.example.healthflow.model.Appointment;
 import com.example.healthflow.model.AppointmentStatus;
 import com.example.healthflow.model.Department;
 import com.example.healthflow.model.Doctor;
+import com.example.healthflow.model.DoctorAvailability;
 import com.example.healthflow.model.Patient;
 import com.example.healthflow.model.User;
 import com.example.healthflow.repository.AppointmentRepository;
+import com.example.healthflow.repository.DepartmentRepository;
+import com.example.healthflow.repository.DoctorAvailabilityRepository;
 import com.example.healthflow.repository.DoctorRepository;
+import com.example.healthflow.repository.NotificationRepository;
 import com.example.healthflow.repository.PatientRepository;
 import com.example.healthflow.repository.UserRepository;
-import com.example.healthflow.repository.DepartmentRepository;
-import com.example.healthflow.repository.NotificationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -44,6 +47,9 @@ public class DoctorServiceImpl implements DoctorService {
 
     @Autowired
     private NotificationRepository notificationRepository;
+
+    @Autowired
+    private DoctorAvailabilityRepository doctorAvailabilityRepository;
 
     @Override
     public Doctor getDoctorByUsername(String username) {
@@ -208,9 +214,29 @@ public class DoctorServiceImpl implements DoctorService {
     @Override
     @Transactional
     public void setAvailability(Doctor doctor, LocalDateTime startTime, LocalDateTime endTime, boolean available) {
-        // Implementation would depend on how availability is stored
-        // This could be implemented by creating slots or by using a separate availability entity
-        // For now, we'll leave this as a placeholder
+        if (available) {
+            // Check for any existing appointments in this time slot
+            List<Appointment> existingAppointments = appointmentRepository.findByDoctorAndAppointmentTimeBetween(
+                    doctor, startTime, endTime);
+
+            if (!existingAppointments.isEmpty()) {
+                throw new IllegalStateException("Cannot set availability: There are existing appointments in this time slot");
+            }
+
+            // Update doctor's working hours
+            doctor.setWorkingHoursStart(startTime);
+            doctor.setWorkingHoursEnd(endTime);
+            doctorRepository.save(doctor);
+        } else {
+            // If setting as unavailable, we don't need to store the time range
+            // Just ensure no new appointments can be made during this time
+            List<Appointment> existingAppointments = appointmentRepository.findByDoctorAndAppointmentTimeBetween(
+                    doctor, startTime, endTime);
+
+            if (!existingAppointments.isEmpty()) {
+                throw new IllegalStateException("Cannot set unavailability: There are existing appointments in this time slot");
+            }
+        }
     }
 
     @Override
@@ -242,5 +268,78 @@ public class DoctorServiceImpl implements DoctorService {
     @Transactional
     public Doctor updateDoctorInfo(Doctor doctor) {
         return doctorRepository.save(doctor);
+    }
+
+    @Override
+    public List<DoctorAvailability> getDoctorAvailability(Doctor doctor) {
+        return doctorAvailabilityRepository.findByDoctor(doctor);
+    }
+
+    @Override
+    @Transactional
+    public DoctorAvailability setDoctorAvailability(Doctor doctor, DayOfWeek dayOfWeek, LocalTime startTime, LocalTime endTime) {
+        // Check if there's already an availability for this day
+        List<DoctorAvailability> existingAvailability = doctorAvailabilityRepository.findByDoctorAndDayOfWeek(doctor, dayOfWeek);
+
+        DoctorAvailability availability;
+        if (!existingAvailability.isEmpty()) {
+            // Update existing availability
+            availability = existingAvailability.get(0);
+            availability.setStartTime(startTime);
+            availability.setEndTime(endTime);
+        } else {
+            // Create new availability
+            availability = new DoctorAvailability();
+            availability.setDoctor(doctor);
+            availability.setDayOfWeek(dayOfWeek);
+            availability.setStartTime(startTime);
+            availability.setEndTime(endTime);
+        }
+
+        return doctorAvailabilityRepository.save(availability);
+    }
+
+    @Override
+    @Transactional
+    public void deleteDoctorAvailability(Long availabilityId) {
+        doctorAvailabilityRepository.deleteById(availabilityId);
+    }
+
+    @Override
+    public boolean isDoctorAvailable(Doctor doctor, LocalDateTime appointmentTime, int durationMinutes) {
+        // Get day of week for the appointment
+        DayOfWeek dayOfWeek = appointmentTime.getDayOfWeek();
+
+        // Get time for the appointment
+        LocalTime timeOfDay = appointmentTime.toLocalTime();
+
+        // Get availability for this day
+        List<DoctorAvailability> dayAvailability = doctorAvailabilityRepository.findByDoctorAndDayOfWeek(doctor, dayOfWeek);
+
+        // If no availability is set for this day, doctor is not available
+        if (dayAvailability.isEmpty()) {
+            return false;
+        }
+
+        // Check if appointment time falls within doctor's availability
+        DoctorAvailability availability = dayAvailability.get(0);
+        LocalTime startTime = availability.getStartTime();
+        LocalTime endTime = availability.getEndTime();
+
+        // Appointment end time
+        LocalTime appointmentEndTime = timeOfDay.plusMinutes(durationMinutes);
+
+        // Check if appointment fits within availability window
+        if (timeOfDay.isBefore(startTime) || appointmentEndTime.isAfter(endTime)) {
+            return false;
+        }
+
+        // Check if there are existing appointments that would conflict
+        LocalDateTime appointmentEndDateTime = appointmentTime.plusMinutes(durationMinutes);
+        List<Appointment> existingAppointments = appointmentRepository.findByDoctorAndAppointmentTimeBetween(
+                doctor, appointmentTime, appointmentEndDateTime);
+
+        // If there are existing appointments in this time slot, doctor is not available
+        return existingAppointments.isEmpty();
     }
 }

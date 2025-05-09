@@ -4,6 +4,8 @@ import com.example.healthflow.model.Appointment;
 import com.example.healthflow.model.AppointmentStatus;
 import com.example.healthflow.model.Doctor;
 import com.example.healthflow.model.Patient;
+import com.example.healthflow.model.DoctorAvailability;
+import com.example.healthflow.dto.AppointmentDTO;
 import com.example.healthflow.service.DoctorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -13,55 +15,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-// Simple DTO to avoid circular references in JSON serialization
-class AppointmentDTO {
-    private Long id;
-    private String patientFirstName;
-    private String patientLastName;
-    private Long patientId;
-    private String doctorFirstName;
-    private String doctorLastName;
-    private Long doctorId;
-    private LocalDateTime appointmentTime;
-    private String status;
-    private String reason;
-    private String notes;
-
-    public AppointmentDTO(Appointment appointment) {
-        this.id = appointment.getId();
-        if (appointment.getPatient() != null) {
-            this.patientFirstName = appointment.getPatient().getFirstName();
-            this.patientLastName = appointment.getPatient().getLastName();
-            this.patientId = appointment.getPatient().getId();
-        }
-        if (appointment.getDoctor() != null) {
-            this.doctorFirstName = appointment.getDoctor().getFirstName();
-            this.doctorLastName = appointment.getDoctor().getLastName();
-            this.doctorId = appointment.getDoctor().getId();
-        }
-        this.appointmentTime = appointment.getAppointmentTime();
-        this.status = appointment.getStatus().name();
-        this.reason = appointment.getReason();
-        this.notes = appointment.getNotes();
-    }
-
-    // Getters
-    public Long getId() { return id; }
-    public String getPatientFirstName() { return patientFirstName; }
-    public String getPatientLastName() { return patientLastName; }
-    public Long getPatientId() { return patientId; }
-    public String getDoctorFirstName() { return doctorFirstName; }
-    public String getDoctorLastName() { return doctorLastName; }
-    public Long getDoctorId() { return doctorId; }
-    public LocalDateTime getAppointmentTime() { return appointmentTime; }
-    public String getStatus() { return status; }
-    public String getReason() { return reason; }
-    public String getNotes() { return notes; }
-}
+import java.util.HashMap;
+import java.time.DayOfWeek;
 
 @RestController
 @RequestMapping("/api/doctor")
@@ -227,5 +186,202 @@ public class DoctorRestController {
         // Save the updated doctor using the service method
         doctor = doctorService.updateDoctorInfo(doctor);
         return ResponseEntity.ok(doctor);
+    }
+
+    @GetMapping("/availability")
+    public ResponseEntity<?> getAvailability(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
+            Authentication authentication) {
+
+        Doctor doctor = doctorService.getDoctorByUsername(authentication.getName());
+        if (doctor == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Map<String, Object> response = new HashMap<>();
+
+        // Get working hours for each day based on the doctor_availability table
+        Map<Integer, Map<String, Object>> workingHours = new HashMap<>();
+        List<DoctorAvailability> availabilityList = doctorService.getDoctorAvailability(doctor);
+
+        // Default for all days
+        for (int i = 0; i < 7; i++) {
+            Map<String, Object> dayHours = new HashMap<>();
+            dayHours.put("enabled", false);
+            dayHours.put("startTime", "09:00");
+            dayHours.put("endTime", "17:00");
+            workingHours.put(i, dayHours);
+        }
+
+        // Update with the doctor's actual availability
+        for (DoctorAvailability availability : availabilityList) {
+            int dayIndex = availability.getDayOfWeek().getValue() % 7; // Sunday is 0 in JS, but 7 in DayOfWeek
+            if (dayIndex == 0) dayIndex = 7;
+            dayIndex--; // Adjust to 0-6 index
+
+            Map<String, Object> dayHours = workingHours.get(dayIndex);
+            dayHours.put("enabled", true);
+            dayHours.put("startTime", availability.getStartTime().toString());
+            dayHours.put("endTime", availability.getEndTime().toString());
+        }
+
+        response.put("workingHours", workingHours);
+
+        // Get appointments for the period
+        List<Appointment> appointments = doctorService.getAppointmentsForPeriod(
+                doctor,
+                start.toLocalDate(),
+                end.toLocalDate()
+        );
+
+        // Convert appointments to DTO to avoid circular references
+        List<Map<String, Object>> appointmentList = appointments.stream()
+                .map(apt -> {
+                    Map<String, Object> aptMap = new HashMap<>();
+                    aptMap.put("id", apt.getId());
+                    aptMap.put("appointmentTime", apt.getAppointmentTime());
+                    aptMap.put("status", apt.getStatus().name());
+                    if (apt.getPatient() != null) {
+                        aptMap.put("patientName", apt.getPatient().getFirstName() + " " + apt.getPatient().getLastName());
+                    }
+                    return aptMap;
+                })
+                .collect(Collectors.toList());
+
+        response.put("appointments", appointmentList);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/working-hours")
+    public ResponseEntity<?> setWorkingHours(
+            @RequestBody Map<String, Map<String, Object>> workingHours,
+            Authentication authentication) {
+
+        Doctor doctor = doctorService.getDoctorByUsername(authentication.getName());
+        if (doctor == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        try {
+            // Process each day's working hours
+            processWorkingHoursForDay(doctor, workingHours, "sunday", DayOfWeek.SUNDAY);
+            processWorkingHoursForDay(doctor, workingHours, "monday", DayOfWeek.MONDAY);
+            processWorkingHoursForDay(doctor, workingHours, "tuesday", DayOfWeek.TUESDAY);
+            processWorkingHoursForDay(doctor, workingHours, "wednesday", DayOfWeek.WEDNESDAY);
+            processWorkingHoursForDay(doctor, workingHours, "thursday", DayOfWeek.THURSDAY);
+            processWorkingHoursForDay(doctor, workingHours, "friday", DayOfWeek.FRIDAY);
+            processWorkingHoursForDay(doctor, workingHours, "saturday", DayOfWeek.SATURDAY);
+
+            // Update appointment duration if present
+            if (workingHours.containsKey("settings") && workingHours.get("settings").containsKey("appointmentDuration")) {
+                Integer duration = Integer.parseInt(workingHours.get("settings").get("appointmentDuration").toString());
+                doctor.setAppointmentDuration(duration);
+                doctorService.updateDoctorInfo(doctor);
+            }
+
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("Error updating working hours: " + e.getMessage());
+        }
+    }
+
+    private void processWorkingHoursForDay(
+            Doctor doctor,
+            Map<String, Map<String, Object>> workingHours,
+            String dayKey,
+            DayOfWeek dayOfWeek) {
+
+        if (workingHours.containsKey(dayKey)) {
+            Map<String, Object> dayData = workingHours.get(dayKey);
+            boolean enabled = (boolean) dayData.get("enabled");
+
+            // Get existing availability for this day
+            List<DoctorAvailability> existingAvailability = doctorService.getDoctorAvailability(doctor)
+                    .stream()
+                    .filter(a -> a.getDayOfWeek() == dayOfWeek)
+                    .collect(Collectors.toList());
+
+            if (enabled) {
+                // Set or update availability
+                String startTimeStr = (String) dayData.get("start");
+                String endTimeStr = (String) dayData.get("end");
+
+                LocalTime startTime = LocalTime.parse(startTimeStr);
+                LocalTime endTime = LocalTime.parse(endTimeStr);
+
+                doctorService.setDoctorAvailability(doctor, dayOfWeek, startTime, endTime);
+            } else if (!existingAvailability.isEmpty()) {
+                // Delete availability if day is disabled
+                doctorService.deleteDoctorAvailability(existingAvailability.get(0).getId());
+            }
+        }
+    }
+
+    @GetMapping("/availability/schedule")
+    public ResponseEntity<List<DoctorAvailability>> getDoctorAvailabilitySchedule(Authentication authentication) {
+        Doctor doctor = doctorService.getDoctorByUsername(authentication.getName());
+        if (doctor == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        List<DoctorAvailability> availabilityList = doctorService.getDoctorAvailability(doctor);
+        return ResponseEntity.ok(availabilityList);
+    }
+
+    @PostMapping("/availability/schedule")
+    public ResponseEntity<DoctorAvailability> setDoctorAvailabilitySchedule(
+            @RequestParam DayOfWeek dayOfWeek,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime startTime,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime endTime,
+            Authentication authentication) {
+
+        Doctor doctor = doctorService.getDoctorByUsername(authentication.getName());
+        if (doctor == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        try {
+            DoctorAvailability availability = doctorService.setDoctorAvailability(doctor, dayOfWeek, startTime, endTime);
+            return ResponseEntity.ok(availability);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @DeleteMapping("/availability/schedule/{id}")
+    public ResponseEntity<?> deleteDoctorAvailabilitySchedule(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        try {
+            doctorService.deleteDoctorAvailability(id);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping("/availability/check")
+    public ResponseEntity<Map<String, Boolean>> checkAvailability(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime appointmentTime,
+            @RequestParam(defaultValue = "30") int durationMinutes,
+            Authentication authentication) {
+
+        Doctor doctor = doctorService.getDoctorByUsername(authentication.getName());
+        if (doctor == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        boolean isAvailable = doctorService.isDoctorAvailable(doctor, appointmentTime, durationMinutes);
+
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("available", isAvailable);
+
+        return ResponseEntity.ok(response);
     }
 }

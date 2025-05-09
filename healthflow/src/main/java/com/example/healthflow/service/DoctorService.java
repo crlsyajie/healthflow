@@ -4,8 +4,11 @@ import com.example.healthflow.model.Appointment;
 import com.example.healthflow.model.AppointmentStatus;
 import com.example.healthflow.model.Doctor;
 import com.example.healthflow.model.Patient;
+import com.example.healthflow.model.DoctorAvailability;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +30,12 @@ public interface DoctorService {
     Map<LocalDate, List<Appointment>> getWeeklyCalendar(Doctor doctor);
     Map<LocalDate, List<Appointment>> getMonthlyCalendar(Doctor doctor);
     void setAvailability(Doctor doctor, LocalDateTime startTime, LocalDateTime endTime, boolean available);
+
+    // Doctor availability management
+    List<DoctorAvailability> getDoctorAvailability(Doctor doctor);
+    DoctorAvailability setDoctorAvailability(Doctor doctor, DayOfWeek dayOfWeek, LocalTime startTime, LocalTime endTime);
+    void deleteDoctorAvailability(Long availabilityId);
+    boolean isDoctorAvailable(Doctor doctor, LocalDateTime appointmentTime, int durationMinutes);
 
     // Patient and appointment management
     Patient getPatientDetails(Long patientId);
