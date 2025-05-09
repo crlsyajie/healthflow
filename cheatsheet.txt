@@ -1,6 +1,6 @@
 # HealthFlow System Cheatsheet
 
-This document explains how the HealthFlow healthcare appointment system works in simple English.
+This document explains how the HealthFlow healthcare appointment system works
 
 ## System Overview
 
