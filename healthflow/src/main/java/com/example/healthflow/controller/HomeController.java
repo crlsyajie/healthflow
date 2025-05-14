@@ -18,6 +18,14 @@ public class HomeController {
     public String home() {
         return "home";
     }
+    
+    /**
+     * Alternative combined login and booking page accessible from root URL
+     */
+    @GetMapping("/loginbook")
+    public String combinedLoginBooking() {
+        return "combined-login-booking";
+    }
 
     @GetMapping("/dashboard")
     public String dashboard(Authentication authentication) {

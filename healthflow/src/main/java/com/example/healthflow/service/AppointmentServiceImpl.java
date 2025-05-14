@@ -98,6 +98,16 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     @Override
+    public List<Appointment> getCompletedAppointments() {
+        return appointmentRepository.findByStatus(AppointmentStatus.COMPLETED);
+    }
+
+    @Override
+    public List<Appointment> getCancelledAppointments() {
+        return appointmentRepository.findByStatus(AppointmentStatus.CANCELLED);
+    }
+
+    @Override
     public List<Appointment> getRecentAppointments(int limit) {
         return appointmentRepository.findTop5ByOrderByCreatedAtDesc()
                 .stream()
@@ -330,6 +340,115 @@ public class AppointmentServiceImpl implements AppointmentService {
                         appointment.getPatient().getLastName());
         }
 
+        notificationRepository.save(notification);
+    }
+
+    // Follow-up appointment implementation
+    @Override
+    @Transactional
+    public Appointment createFollowUpAppointment(Long parentAppointmentId, LocalDateTime followUpTime, 
+                                               Integer durationMinutes, String reason, String notes) {
+        Appointment parentAppointment = getAppointmentById(parentAppointmentId);
+        if (parentAppointment == null) {
+            log.error("Cannot create follow-up: parent appointment with id {} not found", parentAppointmentId);
+            return null;
+        }
+        
+        // Create new follow-up appointment
+        Appointment followUp = new Appointment();
+        followUp.setPatient(parentAppointment.getPatient());
+        followUp.setDoctor(parentAppointment.getDoctor());
+        followUp.setAppointmentTime(followUpTime);
+        followUp.setDurationMinutes(durationMinutes != null ? durationMinutes : parentAppointment.getDurationMinutes());
+        followUp.setReason(reason != null ? reason : "Follow-up for appointment #" + parentAppointmentId);
+        followUp.setNotes(notes);
+        followUp.setStatus(AppointmentStatus.PENDING);
+        followUp.setIsFollowUp(true);
+        followUp.setParentAppointment(parentAppointment);
+        
+        // Calculate interval days
+        if (followUpTime != null && parentAppointment.getAppointmentTime() != null) {
+            LocalDate parentDate = parentAppointment.getAppointmentTime().toLocalDate();
+            LocalDate followUpDate = followUpTime.toLocalDate();
+            followUp.setFollowUpIntervalDays((int)java.time.temporal.ChronoUnit.DAYS.between(parentDate, followUpDate));
+        }
+        
+        // Save the follow-up
+        Appointment savedFollowUp = appointmentRepository.save(followUp);
+        
+        // Create notification
+        if (savedFollowUp != null) {
+            createFollowUpNotification(savedFollowUp);
+        }
+        
+        return savedFollowUp;
+    }
+    
+    @Override
+    public List<Appointment> getFollowUpAppointments(Long parentAppointmentId) {
+        Appointment parentAppointment = getAppointmentById(parentAppointmentId);
+        if (parentAppointment == null) {
+            return new ArrayList<>();
+        }
+        
+        return appointmentRepository.findByParentAppointment(parentAppointment);
+    }
+    
+    @Override
+    @Transactional
+    public List<Appointment> createScheduledFollowUps(Long appointmentId, int[] intervalDays, 
+                                                    String reason, Integer durationMinutes) {
+        Appointment parentAppointment = getAppointmentById(appointmentId);
+        if (parentAppointment == null) {
+            log.error("Cannot create scheduled follow-ups: parent appointment with id {} not found", appointmentId);
+            return new ArrayList<>();
+        }
+        
+        List<Appointment> createdFollowUps = new ArrayList<>();
+        
+        for (int days : intervalDays) {
+            if (days <= 0) {
+                log.warn("Skipping invalid follow-up interval: {} days", days);
+                continue;
+            }
+            
+            // Calculate follow-up date
+            LocalDateTime followUpTime = parentAppointment.getAppointmentTime().plusDays(days);
+            
+            // Create the follow-up appointment
+            Appointment followUp = new Appointment();
+            followUp.setPatient(parentAppointment.getPatient());
+            followUp.setDoctor(parentAppointment.getDoctor());
+            followUp.setAppointmentTime(followUpTime);
+            followUp.setDurationMinutes(durationMinutes != null ? durationMinutes : parentAppointment.getDurationMinutes());
+            followUp.setReason(reason != null ? reason : "Follow-up after " + days + " days");
+            followUp.setStatus(AppointmentStatus.PENDING);
+            followUp.setIsFollowUp(true);
+            followUp.setParentAppointment(parentAppointment);
+            followUp.setFollowUpIntervalDays(days);
+            
+            // Save the follow-up
+            Appointment savedFollowUp = appointmentRepository.save(followUp);
+            if (savedFollowUp != null) {
+                createdFollowUps.add(savedFollowUp);
+                createFollowUpNotification(savedFollowUp);
+            }
+        }
+        
+        return createdFollowUps;
+    }
+    
+    private void createFollowUpNotification(Appointment followUp) {
+        Notification notification = new Notification();
+        notification.setType(Notification.NotificationType.FOLLOW_UP_SCHEDULED);
+        notification.setTitle("Follow-up Appointment Scheduled");
+        notification.setMessage("Follow-up appointment scheduled for patient " + 
+                               followUp.getPatient().getFirstName() + " " + 
+                               followUp.getPatient().getLastName() + " on " + 
+                               followUp.getAppointmentTime().format(DateTimeFormatter.ofPattern("MMM dd, yyyy")));
+        notification.setAppointment(followUp);
+        notification.setUser(followUp.getPatient().getUser());
+        notification.setCreatedAt(LocalDateTime.now());
         notificationRepository.save(notification);
     }
 } 

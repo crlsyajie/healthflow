@@ -53,7 +53,15 @@ public class AuthController {
 
     @GetMapping("/login")
     public String showLoginForm() {
-        return "login";
+        return "combined-login-booking";
+    }
+    
+    /**
+     * Combined login and booking page
+     */
+    @GetMapping("/combined")
+    public String showCombinedLoginBookingForm() {
+        return "combined-login-booking";
     }
 
     // After successful login, users will be redirected based on their role

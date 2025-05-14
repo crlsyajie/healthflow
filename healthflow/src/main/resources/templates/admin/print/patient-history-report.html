@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient History Report - HealthFlow</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @media print {
+            body {
+                padding: 20px;
+                font-size: 12pt;
+            }
+            .no-print {
+                display: none;
+            }
+            .page-break {
+                page-break-after: always;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            th, td {
+                border: 1px solid #ddd;
+                padding: 8px;
+            }
+            .header {
+                margin-bottom: 20px;
+            }
+            .patient-info {
+                margin-bottom: 20px;
+            }
+        }
+        
+        .header {
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0d6efd;
+        }
+        .print-btn {
+            margin: 20px 0;
+        }
+        .patient-info {
+            margin-bottom: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <!-- Header -->
+        <div class="header d-flex justify-content-between align-items-center">
+            <div>
+                <div class="logo">HealthFlow</div>
+                <div>Patient History Report</div>
+                <div th:text="${#temporals.format(currentDate, 'MMMM dd, yyyy')}">May 10, 2023</div>
+            </div>
+            <div class="text-end">
+                <div>Report ID: <span th:text="${#strings.randomAlphanumeric(8).toUpperCase()}">ABC12345</span></div>
+            </div>
+        </div>
+        
+        <!-- Print Button (only visible in browser) -->
+        <div class="print-btn no-print">
+            <button class="btn btn-primary" onclick="window.print()">
+                <i class="fas fa-print me-2"></i> Print Report
+            </button>
+            <a href="javascript:window.close();" class="btn btn-secondary ms-2">Close</a>
+        </div>
+        
+        <!-- Patient Information -->
+        <div class="patient-info">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Patient Information</h5>
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <th style="width: 150px;">Name:</th>
+                            <td th:text="${patient.firstName + ' ' + patient.lastName}">John Doe</td>
+                        </tr>
+                        <tr>
+                            <th>Date of Birth:</th>
+                            <td th:text="${#temporals.format(patient.dateOfBirth, 'MMMM dd, yyyy')}">January 1, 1980</td>
+                        </tr>
+                        <tr>
+                            <th>Gender:</th>
+                            <td th:text="${patient.gender}">Male</td>
+                        </tr>
+                        <tr>
+                            <th>Phone:</th>
+                            <td th:text="${patient.phoneNumber ?: 'Not provided'}">123-456-7890</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h5>Additional Information</h5>
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <th style="width: 150px;">Email:</th>
+                            <td th:text="${patient.user.email}">johndoe@example.com</td>
+                        </tr>
+                        <tr>
+                            <th>Address:</th>
+                            <td th:text="${patient.address ?: 'Not provided'}">123 Main St, City, State</td>
+                        </tr>
+                        <tr>
+                            <th>Total Visits:</th>
+                            <td th:text="${appointments.size()}">5</td>
+                        </tr>
+                        <tr>
+                            <th>Last Visit:</th>
+                            <td th:if="${!appointments.empty}" th:text="${#temporals.format(appointments[0].appointmentTime, 'MMMM dd, yyyy')}">January 1, 2023</td>
+                            <td th:if="${appointments.empty}">No previous visits</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Medical History -->
+        <h5>Appointment History</h5>
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Doctor</th>
+                        <th>Department</th>
+                        <th>Duration</th>
+                        <th>Status</th>
+                        <th>Reason for Visit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:if="${appointments.empty}">
+                        <td colspan="7" class="text-center">No appointments on record</td>
+                    </tr>
+                    <tr th:each="appointment : ${appointments}" th:with="appointmentDateTime=${appointment.appointmentTime}">
+                        <td th:text="${#temporals.format(appointmentDateTime, 'yyyy-MM-dd')}">2023-01-01</td>
+                        <td th:text="${#temporals.format(appointmentDateTime, 'HH:mm')}">09:00</td>
+                        <td th:text="${'Dr. ' + appointment.doctor.firstName + ' ' + appointment.doctor.lastName}">Dr. Jane Smith</td>
+                        <td th:text="${appointment.doctor.department != null ? appointment.doctor.department.name : 'N/A'}">Cardiology</td>
+                        <td th:text="${appointment.durationMinutes + ' min'}">30 min</td>
+                        <td>
+                            <span th:text="${appointment.status}">COMPLETED</span>
+                        </td>
+                        <td th:text="${appointment.reason ?: 'Not specified'}">Routine checkup</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Notes Section -->
+        <div class="mt-4">
+            <h5>Notes</h5>
+            <div class="border p-3 rounded">
+                <div th:each="appointment : ${appointments}" th:if="${appointment.notes != null && !appointment.notes.isEmpty()}">
+                    <div class="mb-3">
+                        <div><strong th:text="${#temporals.format(appointment.appointmentTime, 'yyyy-MM-dd')}">2023-01-01</strong> - 
+                            <span th:text="${'Dr. ' + appointment.doctor.firstName + ' ' + appointment.doctor.lastName}">Dr. Jane Smith</span>
+                        </div>
+                        <div class="ps-3 mt-1" th:text="${appointment.notes}">Patient reported feeling well. No major concerns.</div>
+                    </div>
+                </div>
+                <div th:if="${appointments.empty || appointments.?[notes != null && !notes.isEmpty()].empty}">
+                    <p class="text-muted mb-0">No clinical notes on record.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="mt-5">
+            <div class="text-center text-muted small">
+                <p>This report was generated automatically by HealthFlow System</p>
+                <p>This report is confidential and for authorized medical personnel only.</p>
+                <p>© 2025 HealthFlow. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Print Automatically -->
+    <script>
+        // Auto-print when loaded (with a slight delay to ensure content is rendered)
+        window.onload = function() {
+            setTimeout(function() {
+                // Uncomment this to auto-print when opened
+                // window.print();
+            }, 500);
+        };
+    </script>
+</body>
+</html> 

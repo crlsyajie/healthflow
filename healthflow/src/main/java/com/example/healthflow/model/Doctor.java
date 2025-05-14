@@ -34,6 +34,12 @@ public class Doctor {
 
     private String bio;
 
+    @Column(name = "is_resident", columnDefinition = "enum('yes', 'no') default 'no'")
+    private String isResident = "no";
+    
+    @Column(name = "profile_image")
+    private String profileImage;
+
     @ManyToOne
     @JoinColumn(name = "department_id", nullable = true)
     private Department department;
@@ -75,5 +81,28 @@ public class Doctor {
 
     public void setAppointmentDuration(Integer appointmentDuration) {
         this.appointmentDuration = appointmentDuration;
+    }
+    
+    // Explicit getter and setter methods for isResident
+    public String getIsResident() {
+        return isResident;
+    }
+
+    public void setIsResident(String isResident) {
+        this.isResident = isResident;
+    }
+    
+    // Helper method to check if doctor is a resident
+    public boolean isResident() {
+        return "yes".equalsIgnoreCase(isResident);
+    }
+    
+    // Explicit getter and setter methods for profileImage
+    public String getProfileImage() {
+        return profileImage;
+    }
+
+    public void setProfileImage(String profileImage) {
+        this.profileImage = profileImage;
     }
 }

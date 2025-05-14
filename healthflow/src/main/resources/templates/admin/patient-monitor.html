@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Monitor - HealthFlow</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            min-height: 100vh;
+            background-color: #212529;
+            color: white;
+        }
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .nav-link:hover {
+            color: white;
+        }
+        .nav-link.active {
+            background-color: #6c757d;
+        }
+        .monitor-header {
+            background: linear-gradient(to right, #4e73df, #224abe);
+            color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .patient-card {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            transition: transform 0.2s;
+            margin-bottom: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .patient-card:hover {
+            transform: translateY(-5px);
+        }
+        .patient-header {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(0,0,0,.125);
+            background-color: #f8f9fa;
+        }
+        .patient-body {
+            padding: 1rem;
+        }
+        .patient-footer {
+            border-top: 1px solid rgba(0,0,0,.125);
+            padding: 0.75rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            background-color: #f8f9fa;
+        }
+        .appointment-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            border-radius: 0 0 0 0.5rem;
+        }
+        .appointment-pending {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        .appointment-scheduled {
+            background-color: #17a2b8;
+            color: white;
+        }
+        .appointment-completed {
+            background-color: #28a745;
+            color: white;
+        }
+        .appointment-cancelled {
+            background-color: #dc3545;
+            color: white;
+        }
+        .appointment-none {
+            background-color: #6c757d;
+            color: white;
+        }
+        .stats-card {
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            color: white;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+        .stats-pending {
+            background: linear-gradient(to right, #ffc107, #e0a800);
+        }
+        .stats-completed {
+            background: linear-gradient(to right, #28a745, #1e7e34);
+        }
+        .stats-cancelled {
+            background: linear-gradient(to right, #dc3545, #bd2130);
+        }
+        .stats-icon {
+            font-size: 2rem;
+            opacity: 0.8;
+        }
+        .monitor-container {
+            padding: 1rem;
+        }
+        .refresh-timer {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        #refreshCountdown {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 d-md-block sidebar collapse p-0">
+                <div class="position-sticky pt-3">
+                    <h5 class="px-3 py-2">Admin Panel</h5>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/dashboard">
+                                <i class="fas fa-home me-2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/appointments">
+                                <i class="fas fa-calendar-check me-2"></i> Appointments
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/patients">
+                                <i class="fas fa-user-injured me-2"></i> Patients
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/doctors">
+                                <i class="fas fa-user-md me-2"></i> Doctors
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/departments">
+                                <i class="fas fa-hospital me-2"></i> Departments
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/reports">
+                                <i class="fas fa-chart-line me-2"></i> Reports
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/admin/patient-monitor">
+                                <i class="fas fa-tv me-2"></i> Patient Monitor
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/audit-logs">
+                                <i class="fas fa-history me-2"></i> Audit Logs
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/notifications">
+                                <i class="fas fa-bell me-2"></i> Notifications
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/users">
+                                <i class="fas fa-users me-2"></i> Users
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+                <div class="monitor-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2><i class="fas fa-tv me-2"></i> Patient Monitor</h2>
+                        <p class="mb-0">Real-time bulletin board view of all patients</p>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <span class="refresh-timer me-3">Auto-refresh in <span id="refreshCountdown">60</span>s</span>
+                        <button id="refreshBtn" class="btn btn-light">
+                            <i class="fas fa-sync-alt me-2"></i>Refresh Now
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="stats-card stats-pending">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-0">Pending Appointments</h5>
+                                    <h2 class="mb-0" th:text="${pendingCount}">0</h2>
+                                </div>
+                                <div class="stats-icon">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stats-card stats-completed">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-0">Completed Appointments</h5>
+                                    <h2 class="mb-0" th:text="${completedCount}">0</h2>
+                                </div>
+                                <div class="stats-icon">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stats-card stats-cancelled">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-0">Cancelled Appointments</h5>
+                                    <h2 class="mb-0" th:text="${cancelledCount}">0</h2>
+                                </div>
+                                <div class="stats-icon">
+                                    <i class="fas fa-times-circle"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Search and Filter -->
+                <div class="mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-search"></i>
+                                        </span>
+                                        <input type="text" id="patientSearch" class="form-control" 
+                                               placeholder="Search by name, gender, contact...">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <select id="filterGender" class="form-select" aria-label="Filter by gender">
+                                        <option value="">All Genders</option>
+                                        <option value="MALE">Male</option>
+                                        <option value="FEMALE">Female</option>
+                                        <option value="OTHER">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <button id="resetFilters" class="btn btn-secondary w-100">
+                                        Reset Filters
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Patient Cards -->
+                <div class="row" id="patientCardsContainer">
+                    <div class="col-md-6 col-lg-4 patient-item" th:each="patient : ${patients}" 
+                         th:data-name="${patient.firstName + ' ' + patient.lastName}"
+                         th:data-gender="${patient.gender}">
+                        <div class="patient-card">
+                            <!-- Status Badge (derived from their last appointment) -->
+                            <!-- Updated template to safely handle null appointments -->
+                            <div th:if="${patient.getLastAppointment() != null}">
+                                <div class="appointment-badge" 
+                                     th:with="status=${patient.getLastAppointment().getStatus()}"
+                                     th:classappend="${status.name() == 'PENDING' ? 'appointment-pending' : 
+                                                     status.name() == 'SCHEDULED' ? 'appointment-scheduled' :
+                                                     status.name() == 'COMPLETED' ? 'appointment-completed' : 
+                                                     'appointment-cancelled'}">
+                                    <span th:text="${status}"></span>
+                                </div>
+                            </div>
+                            <div th:if="${patient.getLastAppointment() == null}" class="appointment-badge appointment-none">
+                                <span>NO APPOINTMENTS</span>
+                            </div>
+
+                            <!-- Header -->
+                            <div class="patient-header">
+                                <h5 class="mb-0" 
+                                    th:text="${patient.firstName + ' ' + patient.lastName}">
+                                    Patient Name
+                                </h5>
+                                <span class="badge bg-secondary" th:text="${patient.gender}">Gender</span>
+                            </div>
+
+                            <!-- Body -->
+                            <div class="patient-body">
+                                <div class="mb-2">
+                                    <strong><i class="fas fa-calendar-alt me-2"></i>Date of Birth:</strong>
+                                    <span th:text="${#temporals.format(patient.dateOfBirth, 'MMM dd, yyyy')}">
+                                        Jan 1, 1990
+                                    </span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong><i class="fas fa-phone me-2"></i>Contact:</strong>
+                                    <span th:text="${patient.phoneNumber != null ? patient.phoneNumber : 'Not provided'}">
+                                        +1234567890
+                                    </span>
+                                </div>
+                                <div>
+                                    <strong><i class="fas fa-map-marker-alt me-2"></i>Address:</strong>
+                                    <span th:text="${patient.address != null ? patient.address : 'Not provided'}">
+                                        123 Main St
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Footer -->
+                            <div class="patient-footer">
+                                <small class="text-muted">
+                                    <i class="fas fa-user-circle me-1"></i>
+                                    ID: <span th:text="${patient.id}"></span>
+                                </small>
+                                <a th:href="@{/admin/patients/{id}(id=${patient.id})}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye me-1"></i>View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- No patients found message -->
+                    <div class="col-12 text-center py-5" id="noPatients" style="display: none;">
+                        <i class="fas fa-user-slash fa-3x mb-3 text-muted"></i>
+                        <h4 class="text-muted">No patients found</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS, Popper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Monitor Functionality -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Patient search and filter functionality
+            const patientSearch = document.getElementById('patientSearch');
+            const filterGender = document.getElementById('filterGender');
+            const resetFilters = document.getElementById('resetFilters');
+            const patientItems = document.querySelectorAll('.patient-item');
+            const noPatients = document.getElementById('noPatients');
+            
+            // Search and filter function
+            function filterPatients() {
+                const searchTerm = patientSearch.value.toLowerCase();
+                const genderFilter = filterGender.value;
+                let visibleCount = 0;
+                
+                patientItems.forEach(item => {
+                    const patientName = item.getAttribute('data-name').toLowerCase();
+                    const patientGender = item.getAttribute('data-gender');
+                    const nameMatch = patientName.includes(searchTerm);
+                    const genderMatch = genderFilter === '' || patientGender === genderFilter;
+                    
+                    if (nameMatch && genderMatch) {
+                        item.style.display = 'block';
+                        visibleCount++;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+                
+                // Show/hide "No patients found" message
+                noPatients.style.display = visibleCount === 0 ? 'block' : 'none';
+            }
+            
+            // Event listeners
+            patientSearch.addEventListener('input', filterPatients);
+            filterGender.addEventListener('change', filterPatients);
+            resetFilters.addEventListener('click', function() {
+                patientSearch.value = '';
+                filterGender.value = '';
+                filterPatients();
+            });
+            
+            // Auto-refresh countdown
+            const refreshCountdown = document.getElementById('refreshCountdown');
+            const refreshBtn = document.getElementById('refreshBtn');
+            let countdown = 60;
+            
+            function updateCountdown() {
+                refreshCountdown.textContent = countdown;
+                countdown--;
+                
+                if (countdown < 0) {
+                    // Reload the page
+                    window.location.reload();
+                }
+            }
+            
+            // Initialize countdown timer
+            const countdownInterval = setInterval(updateCountdown, 1000);
+            
+            // Manual refresh button
+            refreshBtn.addEventListener('click', function() {
+                clearInterval(countdownInterval);
+                window.location.reload();
+            });
+        });
+    </script>
+</body>
+</html> 

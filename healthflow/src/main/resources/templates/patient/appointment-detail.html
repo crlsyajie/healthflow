@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointment Details - HealthFlow</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="/">HealthFlow</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/patient/dashboard">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/patient/appointments">My Appointments</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/patient/doctors">Find Doctors</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/patient/profile">My Profile</a>
+                </li>
+            </ul>
+            <form th:action="@{/logout}" method="post" class="d-flex">
+                <button class="btn btn-outline-light" type="submit">Logout</button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>Appointment Details</h1>
+            <p class="lead">Viewing details for your appointment on <span th:text="${#temporals.format(appointment.appointmentTime, 'MMMM dd, yyyy')}"></span></p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="/patient/appointments" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Appointments
+            </a>
+        </div>
+    </div>
+
+    <!-- Alerts for success or error messages -->
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${success}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Appointment Information</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="fw-bold">General Information</h6>
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Appointment ID</th>
+                            <td th:text="${appointment.id}"></td>
+                        </tr>
+                        <tr>
+                            <th>Date & Time</th>
+                            <td th:text="${#temporals.format(appointment.appointmentTime, 'MMMM dd, yyyy - HH:mm')}"></td>
+                        </tr>
+                        <tr>
+                            <th>Duration</th>
+                            <td th:text="${appointment.durationMinutes + ' minutes'}"></td>
+                        </tr>
+                        <tr>
+                            <th>Status</th>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${appointment.status.name() == 'PENDING' ? 'bg-warning' :
+                                                    appointment.status.name() == 'CONFIRMED' ? 'bg-success' :
+                                                    appointment.status.name() == 'COMPLETED' ? 'bg-secondary' :
+                                                    appointment.status.name() == 'CANCELLED' ? 'bg-danger' :
+                                                    appointment.status.name() == 'RESCHEDULED' ? 'bg-info' : 'bg-primary'}"
+                                      th:text="${appointment.status}"></span>
+                            </td>
+                        </tr>
+                        <tr th:if="${appointment.isFollowUp != null && appointment.isFollowUp}">
+                            <th>Follow-up Type</th>
+                            <td>
+                                <span class="badge bg-info">This is a follow-up appointment</span>
+                                <p class="mt-1 mb-0" th:if="${appointment.followUpIntervalDays != null}">
+                                    Scheduled <span th:text="${appointment.followUpIntervalDays}"></span> days 
+                                    after original appointment
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Created On</th>
+                            <td th:text="${#temporals.format(appointment.createdAt, 'MMMM dd, yyyy')}"></td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="fw-bold">Doctor Information</h6>
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Doctor Name</th>
+                            <td th:text="${'Dr. ' + appointment.doctor.firstName + ' ' + appointment.doctor.lastName}"></td>
+                        </tr>
+                        <tr>
+                            <th>Specialization</th>
+                            <td th:text="${appointment.doctor.specialization}"></td>
+                        </tr>
+                        <tr>
+                            <th>Department</th>
+                            <td th:text="${appointment.doctor.department != null ? appointment.doctor.department.name : 'N/A'}"></td>
+                        </tr>
+                        <tr>
+                            <th>Contact</th>
+                            <td th:text="${appointment.doctor.phoneNumber ?: 'Not available'}"></td>
+                        </tr>
+                        <tr th:if="${appointment.doctor.isResident == 'yes'}">
+                            <th>Status</th>
+                            <td><span class="badge bg-info">Resident Doctor</span></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-12">
+                    <h6 class="fw-bold">Reason & Notes</h6>
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Reason for Visit</th>
+                            <td th:text="${appointment.reason ?: 'No reason provided'}"></td>
+                        </tr>
+                        <tr>
+                            <th>Additional Notes</th>
+                            <td th:text="${appointment.notes ?: 'No notes available'}"></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Action buttons based on status -->
+            <div class="row mt-3" th:if="${appointment.status == T(com.example.healthflow.model.AppointmentStatus).PENDING || 
+                appointment.status == T(com.example.healthflow.model.AppointmentStatus).CONFIRMED ||
+                appointment.status == T(com.example.healthflow.model.AppointmentStatus).RESCHEDULED}">
+                <div class="col-md-12">
+                    <div class="d-flex">
+                        <form th:action="@{/patient/appointment/cancel/{id}(id=${appointment.id})}" method="post">
+                            <button type="submit" class="btn btn-danger me-2">
+                                <i class="bi bi-x-circle"></i> Cancel Appointment
+                            </button>
+                        </form>
+                        <a th:href="@{/patient/appointment/reschedule/{id}(id=${appointment.id})}" class="btn btn-warning">
+                            <i class="bi bi-calendar"></i> Reschedule
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Original Appointment Section (if this is a follow-up) -->
+    <div class="card mb-4" th:if="${appointment.isFollowUp != null && appointment.isFollowUp && appointment.parentAppointment != null}">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Original Appointment</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Date & Time</th>
+                            <td th:text="${#temporals.format(appointment.parentAppointment.appointmentTime, 'MMMM dd, yyyy - HH:mm')}"></td>
+                        </tr>
+                        <tr>
+                            <th>Status</th>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${appointment.parentAppointment.status.name() == 'PENDING' ? 'bg-warning' :
+                                                    appointment.parentAppointment.status.name() == 'CONFIRMED' ? 'bg-success' :
+                                                    appointment.parentAppointment.status.name() == 'COMPLETED' ? 'bg-secondary' :
+                                                    appointment.parentAppointment.status.name() == 'CANCELLED' ? 'bg-danger' :
+                                                    appointment.parentAppointment.status.name() == 'RESCHEDULED' ? 'bg-info' : 'bg-primary'}"
+                                      th:text="${appointment.parentAppointment.status}"></span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-grid">
+                        <a th:href="@{/patient/appointments/{id}(id=${appointment.parentAppointment.id})}" class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-up-right-square"></i> View Original Appointment Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Follow-up Appointments Section -->
+    <div class="card" th:if="${followUps != null && !followUps.empty}">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">Follow-up Appointments</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Duration</th>
+                            <th>Reason</th>
+                            <th>Interval</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="followUp : ${followUps}">
+                            <td th:text="${#temporals.format(followUp.appointmentTime, 'MMM dd, yyyy - HH:mm')}"></td>
+                            <td th:text="${followUp.durationMinutes + ' min'}"></td>
+                            <td th:text="${followUp.reason}"></td>
+                            <td th:text="${followUp.followUpIntervalDays + ' days'}"></td>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${followUp.status.name() == 'PENDING' ? 'bg-warning' :
+                                                    followUp.status.name() == 'CONFIRMED' ? 'bg-success' :
+                                                    followUp.status.name() == 'COMPLETED' ? 'bg-secondary' :
+                                                    followUp.status.name() == 'CANCELLED' ? 'bg-danger' :
+                                                    followUp.status.name() == 'RESCHEDULED' ? 'bg-info' : 'bg-primary'}"
+                                      th:text="${followUp.status}"></span>
+                            </td>
+                            <td>
+                                <a th:href="@{/patient/appointments/{id}(id=${followUp.id})}" class="btn btn-sm btn-info">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="mt-5 py-3 bg-light">
+    <div class="container text-center">
+        <p class="mb-0">© 2025 HealthFlow. All rights reserved.</p>
+    </div>
+</footer>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

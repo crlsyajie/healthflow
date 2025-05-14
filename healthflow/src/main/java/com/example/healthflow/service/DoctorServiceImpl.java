@@ -271,6 +271,47 @@ public class DoctorServiceImpl implements DoctorService {
     }
 
     @Override
+    @Transactional
+    public Doctor updateDoctorProfile(Doctor doctor, String profileImage) {
+        doctor.setProfileImage(profileImage);
+        return doctorRepository.save(doctor);
+    }
+
+    @Override
+    @Transactional
+    public Doctor updateResidentStatus(Long doctorId, String isResident) {
+        Doctor doctor = doctorRepository.findById(doctorId).orElse(null);
+        if (doctor == null) {
+            return null;
+        }
+        
+        doctor.setIsResident(isResident);
+        return doctorRepository.save(doctor);
+    }
+    
+    @Override
+    public List<Doctor> getResidentDoctors() {
+        return doctorRepository.findAll().stream()
+                .filter(doctor -> "yes".equalsIgnoreCase(doctor.getIsResident()))
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    public List<Doctor> getNonResidentDoctors() {
+        return doctorRepository.findAll().stream()
+                .filter(doctor -> !"yes".equalsIgnoreCase(doctor.getIsResident()))
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    public List<Doctor> getPotentialSupervisors() {
+        // Return doctors who are not residents and can supervise
+        return doctorRepository.findAll().stream()
+                .filter(doctor -> !"yes".equalsIgnoreCase(doctor.getIsResident()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<DoctorAvailability> getDoctorAvailability(Doctor doctor) {
         return doctorAvailabilityRepository.findByDoctor(doctor);
     }

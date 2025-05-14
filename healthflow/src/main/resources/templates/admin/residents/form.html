@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" layout:decorate="~{layouts/admin}">
+<head>
+    <title>Add New Resident</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <div layout:fragment="content">
+        <div class="container-fluid">
+            <h1 class="h3 mb-4 text-gray-800">Add New Resident</h1>
+            
+            <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
+            
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Resident Information</h6>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/admin/residents/create}" method="post">
+                        <div class="form-group row">
+                            <label for="doctorId" class="col-sm-2 col-form-label">Select Doctor</label>
+                            <div class="col-sm-10">
+                                <select class="form-control" id="doctorId" name="doctorId" required>
+                                    <option value="">-- Select Doctor --</option>
+                                    <option th:each="doctor : ${doctors}" 
+                                            th:value="${doctor.id}" 
+                                            th:text="${doctor.firstName + ' ' + doctor.lastName + ' (' + doctor.specialization + ')'}">
+                                    </option>
+                                </select>
+                                <small class="form-text text-muted">Select a doctor to assign as a resident</small>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <label for="programName" class="col-sm-2 col-form-label">Program Name</label>
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control" id="programName" name="programName" required>
+                                <small class="form-text text-muted">Name of the residency program (e.g., Internal Medicine, Surgery)</small>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <label for="residencyYear" class="col-sm-2 col-form-label">Residency Year</label>
+                            <div class="col-sm-10">
+                                <select class="form-control" id="residencyYear" name="residencyYear">
+                                    <option value="">-- Select Year --</option>
+                                    <option value="1">Year 1</option>
+                                    <option value="2">Year 2</option>
+                                    <option value="3">Year 3</option>
+                                    <option value="4">Year 4</option>
+                                    <option value="5">Year 5</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <label for="programStartDate" class="col-sm-2 col-form-label">Start Date</label>
+                            <div class="col-sm-10">
+                                <input type="date" class="form-control" id="programStartDate" name="programStartDate">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <label for="programEndDate" class="col-sm-2 col-form-label">End Date</label>
+                            <div class="col-sm-10">
+                                <input type="date" class="form-control" id="programEndDate" name="programEndDate">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <label for="supervisorId" class="col-sm-2 col-form-label">Supervisor</label>
+                            <div class="col-sm-10">
+                                <select class="form-control" id="supervisorId" name="supervisorId">
+                                    <option value="">-- No Supervisor --</option>
+                                    <option th:each="supervisor : ${supervisors}" 
+                                            th:value="${supervisor.id}" 
+                                            th:text="${supervisor.firstName + ' ' + supervisor.lastName + ' (' + supervisor.specialization + ')'}">
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <label for="notes" class="col-sm-2 col-form-label">Notes</label>
+                            <div class="col-sm-10">
+                                <textarea class="form-control" id="notes" name="notes" rows="4"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <div class="col-sm-10 offset-sm-2">
+                                <button type="submit" class="btn btn-primary">Save Resident</button>
+                                <a th:href="@{/admin/residents}" class="btn btn-secondary">Cancel</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

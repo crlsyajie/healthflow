@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" layout:decorate="~{layouts/admin}">
+<head>
+    <title>Edit Resident</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <div layout:fragment="content">
+        <div class="container-fluid">
+            <h1 class="h3 mb-4 text-gray-800">Edit Resident</h1>
+            
+            <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
+            
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Resident Information</h6>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/admin/residents/edit/{id}(id=${resident.id})}" method="post">
+                        <div class="form-group row">
+                            <label for="doctorName" class="col-sm-2 col-form-label">Doctor</label>
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control-plaintext" id="doctorName"
+                                       th:value="${resident.doctor.firstName + ' ' + resident.doctor.lastName}" 
+                                       readonly
+                                       aria-label="Doctor name"
+                                       placeholder="Doctor name">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <label for="programName" class="col-sm-2 col-form-label">Program Name</label>
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control" id="programName" name="programName" 
+                                       th:value="${resident.programName}" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <label for="residencyYear" class="col-sm-2 col-form-label">Residency Year</label>
+                            <div class="col-sm-10">
+                                <select class="form-control" id="residencyYear" name="residencyYear">
+                                    <option value="">-- Select Year --</option>
+                                    <option value="1" th:selected="${resident.residencyYear == 1}">Year 1</option>
+                                    <option value="2" th:selected="${resident.residencyYear == 2}">Year 2</option>
+                                    <option value="3" th:selected="${resident.residencyYear == 3}">Year 3</option>
+                                    <option value="4" th:selected="${resident.residencyYear == 4}">Year 4</option>
+                                    <option value="5" th:selected="${resident.residencyYear == 5}">Year 5</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <label for="programStartDate" class="col-sm-2 col-form-label">Start Date</label>
+                            <div class="col-sm-10">
+                                <input type="date" class="form-control" id="programStartDate" name="programStartDate"
+                                       th:value="${resident.programStartDate}">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <label for="programEndDate" class="col-sm-2 col-form-label">End Date</label>
+                            <div class="col-sm-10">
+                                <input type="date" class="form-control" id="programEndDate" name="programEndDate"
+                                       th:value="${resident.programEndDate}">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <label for="supervisorId" class="col-sm-2 col-form-label">Supervisor</label>
+                            <div class="col-sm-10">
+                                <select class="form-control" id="supervisorId" name="supervisorId">
+                                    <option value="">-- No Supervisor --</option>
+                                    <option th:each="supervisor : ${supervisors}" 
+                                            th:value="${supervisor.id}" 
+                                            th:text="${supervisor.firstName + ' ' + supervisor.lastName + ' (' + supervisor.specialization + ')'}"
+                                            th:selected="${resident.supervisorId == supervisor.id}">
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <label for="notes" class="col-sm-2 col-form-label">Notes</label>
+                            <div class="col-sm-10">
+                                <textarea class="form-control" id="notes" name="notes" rows="4" th:text="${resident.notes}"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <div class="col-sm-10 offset-sm-2">
+                                <button type="submit" class="btn btn-primary">Update Resident</button>
+                                <a th:href="@{/admin/residents}" class="btn btn-secondary">Cancel</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

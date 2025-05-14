@@ -1,317 +1,454 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Doctor Details - HealthFlow</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" th:href="@{/css/styles.css}">
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+      body {
+          background-color: #f8f9fa;
+      }
+      .sidebar {
+          min-height: 100vh;
+          background-color: #212529;
+          color: white;
+      }
+      .nav-link {
+          color: rgba(255, 255, 255, 0.8);
+      }
+      .nav-link:hover {
+          color: white;
+      }
+      .nav-link.active {
+          background-color: #6c757d;
+      }
+      .dropdown-item.active, .dropdown-item:active {
+          background-color: #6c757d;
+      }
+  </style>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-danger">
-  <div class="container">
-    <a class="navbar-brand" href="/">HealthFlow</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav me-auto">
-        <li class="nav-item">
-          <a class="nav-link" href="/admin/dashboard">Dashboard</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/admin/appointments">Appointments</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link active" href="/admin/doctors">Doctors</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/admin/patients">Patients</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/admin/departments">Departments</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/admin/reports">Reports</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/admin/notifications">Notifications</a>
-        </li>
-      </ul>
-      <form th:action="@{/logout}" method="post" class="d-flex">
-        <button class="btn btn-outline-light" type="submit">Logout</button>
-      </form>
-    </div>
-  </div>
-</nav>
+  <div class="container-fluid">
+      <div class="row">
+          <!-- Sidebar -->
+          <div class="col-md-3 col-lg-2 d-md-block sidebar collapse p-0">
+              <div class="position-sticky pt-3">
+                  <h5 class="px-3 py-2">Admin Panel</h5>
+                  <ul class="nav flex-column">
+                      <li class="nav-item">
+                          <a class="nav-link" href="/admin/dashboard">
+                              <i class="fas fa-home me-2"></i> Dashboard
+                          </a>
+                      </li>
+                      <li class="nav-item">
+                          <a class="nav-link" href="/admin/appointments">
+                              <i class="fas fa-calendar-check me-2"></i> Appointments
+                          </a>
+                      </li>
+                      <li class="nav-item">
+                          <a class="nav-link" href="/admin/patients">
+                              <i class="fas fa-user-injured me-2"></i> Patients
+                          </a>
+                      </li>
+                      <li class="nav-item">
+                          <a class="nav-link active" href="/admin/doctors">
+                              <i class="fas fa-user-md me-2"></i> Doctors
+                          </a>
+                      </li>
+                      <li class="nav-item">
+                          <a class="nav-link" href="/admin/departments">
+                              <i class="fas fa-hospital me-2"></i> Departments
+                          </a>
+                      </li>
+                      <li class="nav-item">
+                          <a class="nav-link" href="/admin/reports">
+                              <i class="fas fa-chart-line me-2"></i> Reports
+                          </a>
+                      </li>
+                      <li class="nav-item">
+                          <a class="nav-link" href="/admin/patient-monitor">
+                              <i class="fas fa-tv me-2"></i> Patient Monitor
+                          </a>
+                      </li>
+                      <li class="nav-item">
+                          <a class="nav-link" href="/admin/audit-logs">
+                              <i class="fas fa-history me-2"></i> Audit Logs
+                          </a>
+                      </li>
+                      <li class="nav-item">
+                          <a class="nav-link" href="/admin/notifications">
+                              <i class="fas fa-bell me-2"></i> Notifications
+                          </a>
+                      </li>
+                      <li class="nav-item">
+                          <a class="nav-link" href="/admin/users">
+                              <i class="fas fa-users me-2"></i> Users
+                          </a>
+                      </li>
+                  </ul>
+                  <div class="px-3 py-4 mt-auto">
+                      <form th:action="@{/logout}" method="post">
+                          <button class="btn btn-outline-light w-100" type="submit">
+                              <i class="fas fa-sign-out-alt me-2"></i>Logout
+                          </button>
+                      </form>
+                  </div>
+              </div>
+          </div>
 
-<div class="container mt-4">
-  <div class="row mb-4">
-    <div class="col-md-8">
-      <h1>Doctor Details</h1>
-      <p class="lead">View and manage doctor information</p>
-    </div>
-    <div class="col-md-4 text-end">
-      <a href="/admin/doctors" class="btn btn-outline-primary">
-        <i class="bi bi-arrow-left"></i> Back to Doctors
-      </a>
-    </div>
+          <!-- Main Content -->
+          <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+              <div class="row mb-4">
+                  <div class="col-md-8">
+                      <h2>Doctor Details</h2>
+                      <p class="text-muted">View and manage doctor information</p>
+                  </div>
+                  <div class="col-md-4 text-end">
+                      <a href="/admin/doctors" class="btn btn-outline-primary">
+                          <i class="fas fa-arrow-left me-2"></i> Back to Doctors
+                      </a>
+                  </div>
+              </div>
+
+              <!-- Flash messages -->
+              <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                  <span th:text="${success}">Success message</span>
+                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+              <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                  <span th:text="${error}">Error message</span>
+                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+
+              <div class="row">
+                  <!-- Doctor Profile Card -->
+                  <div class="col-md-6 mb-4">
+                      <div class="card h-100">
+                          <div class="card-header bg-primary text-white">
+                              <h5 class="card-title mb-0">Doctor Profile</h5>
+                          </div>
+                          <div class="card-body">
+                              <div class="row mb-3">
+                                  <div class="col-4">
+                                      <strong>Full Name:</strong>
+                                  </div>
+                                  <div class="col-8" th:text="${doctor.firstName + ' ' + doctor.lastName}">John Doe</div>
+                              </div>
+                              <div class="row mb-3">
+                                  <div class="col-4">
+                                      <strong>Username:</strong>
+                                  </div>
+                                  <div class="col-8" th:text="${doctor.user.username}">johndoe</div>
+                              </div>
+                              <div class="row mb-3">
+                                  <div class="col-4">
+                                      <strong>Email:</strong>
+                                  </div>
+                                  <div class="col-8" th:text="${doctor.user.email}">johndoe@example.com</div>
+                              </div>
+                              <div class="row mb-3">
+                                  <div class="col-4">
+                                      <strong>Department:</strong>
+                                  </div>
+                                  <div class="col-8" th:text="${doctor.department != null ? doctor.department.name : 'Not Assigned'}">Cardiology</div>
+                              </div>
+                              <div class="row mb-3">
+                                  <div class="col-4">
+                                      <strong>Specialization:</strong>
+                                  </div>
+                                  <div class="col-8" th:text="${doctor.specialization}">Cardiology</div>
+                              </div>
+                              <div class="row mb-3">
+                                  <div class="col-4">
+                                      <strong>License Number:</strong>
+                                  </div>
+                                  <div class="col-8" th:text="${doctor.licenseNumber}">DR12345</div>
+                              </div>
+                              <div class="row mb-3">
+                                  <div class="col-4">
+                                      <strong>Phone Number:</strong>
+                                  </div>
+                                  <div class="col-8" th:text="${doctor.phoneNumber}">123-456-7890</div>
+                              </div>
+                              <div class="row mb-3">
+                                  <div class="col-4">
+                                      <strong>Bio:</strong>
+                                  </div>
+                                  <div class="col-8" th:text="${doctor.bio}">Doctor biography goes here...</div>
+                              </div>
+                              <div class="row mb-3">
+                                  <div class="col-4">
+                                      <strong>Resident Status:</strong>
+                                  </div>
+                                  <div class="col-8">
+                                      <span class="badge" th:classappend="${doctor.isResident() ? 'bg-success' : 'bg-secondary'}" 
+                                            th:text="${doctor.isResident() ? 'Yes' : 'No'}">No</span>
+                                      <button type="button" class="btn btn-sm btn-primary ms-2" data-bs-toggle="modal" data-bs-target="#editResidentModal">
+                                          Change
+                                      </button>
+                                  </div>
+                              </div>
+                              <div class="row mb-3">
+                                  <div class="col-4">
+                                      <strong>Profile Image:</strong>
+                                  </div>
+                                  <div class="col-8">
+                                      <img th:if="${doctor.profileImage != null}" th:src="${doctor.profileImage}" 
+                                           class="img-thumbnail" style="max-width: 100px; max-height: 100px;" alt="Profile Image">
+                                      <span th:if="${doctor.profileImage == null}" class="text-muted">No image uploaded</span>
+                                      <button type="button" class="btn btn-sm btn-primary ms-2" data-bs-toggle="modal" data-bs-target="#uploadImageModal">
+                                          Upload Image
+                                      </button>
+                                  </div>
+                              </div>
+                              <div class="row mb-3">
+                                  <div class="col-4">
+                                      <strong>Account Status:</strong>
+                                  </div>
+                                  <div class="col-8">
+                                      <span class="badge" th:classappend="${doctor.user.enabled ? 'bg-success' : 'bg-danger'}"
+                                            th:text="${doctor.user.enabled ? 'Active' : 'Inactive'}">Active</span>
+                                  </div>
+                              </div>
+                          </div>
+                          <div class="card-footer">
+                              <div class="d-flex justify-content-between">
+                                  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editDeptModal">
+                                      Change Department
+                                  </button>
+                                  <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#removeDoctorModal">
+                                      Remove Doctor
+                                  </button>
+                                  <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#editDoctorModal" aria-label="Edit Doctor">
+                                      <i class="fas fa-pencil-alt me-2"></i> Edit Doctor
+                                  </button>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+
+                  <!-- Doctor Appointments Card -->
+                  <div class="col-md-6 mb-4">
+                      <div class="card h-100">
+                          <div class="card-header bg-info text-white">
+                              <h5 class="card-title mb-0">Recent Appointments</h5>
+                          </div>
+                          <div class="card-body">
+                              <div th:if="${appointments == null || appointments.empty}" class="alert alert-info">
+                                  No appointments found for this doctor.
+                              </div>
+                              <div th:if="${appointments != null && !appointments.empty}" class="table-responsive">
+                                  <table class="table table-striped table-hover">
+                                      <thead>
+                                      <tr>
+                                          <th>Date & Time</th>
+                                          <th>Patient</th>
+                                          <th>Status</th>
+                                      </tr>
+                                      </thead>
+                                      <tbody>
+                                      <tr th:each="appointment : ${appointments}">
+                                          <td th:text="${#temporals.format(appointment.appointmentTime, 'MMM dd, HH:mm')}">Jan 1, 10:00</td>
+                                          <td>
+                                              <a th:href="@{/admin/patients/{id}(id=${appointment.patient.id})}"
+                                                 th:text="${appointment.patient.firstName + ' ' + appointment.patient.lastName}">
+                                                  Jane Smith
+                                              </a>
+                                          </td>
+                                          <td>
+                                              <span class="badge"
+                                                    th:classappend="${appointment.status == T(com.example.healthflow.model.AppointmentStatus).PENDING ? 'bg-warning' :
+                                                                       appointment.status == T(com.example.healthflow.model.AppointmentStatus).COMPLETED ? 'bg-success' :
+                                                                       appointment.status == T(com.example.healthflow.model.AppointmentStatus).CANCELLED ? 'bg-danger' : 'bg-info'}"
+                                                    th:text="${appointment.status}">
+                                                  PENDING
+                                              </span>
+                                          </td>
+                                      </tr>
+                                      </tbody>
+                                  </table>
+                              </div>
+                          </div>
+                          <div class="card-footer">
+                              <a th:href="@{/admin/appointments?doctorId={id}(id=${doctor.id})}" class="btn btn-info">View All Appointments</a>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
   </div>
 
-  <!-- Flash messages -->
-  <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
-    <span th:text="${success}">Success message</span>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-  </div>
-  <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
-    <span th:text="${error}">Error message</span>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  <!-- Change Department Modal -->
+  <div class="modal fade" id="editDeptModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+          <div class="modal-content">
+              <div class="modal-header">
+                  <h5 class="modal-title">Change Department</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                  <form th:action="@{/admin/doctors/{id}/update-department(id=${doctor.id})}" method="post" id="updateDeptForm">
+                      <div class="mb-3">
+                          <label for="departmentId" class="form-label">Department</label>
+                          <select class="form-select" id="departmentId" name="departmentId" required>
+                              <option value="">Select Department</option>
+                              <option th:each="dept : ${departments}"
+                                      th:value="${dept.id}"
+                                      th:text="${dept.name}"
+                                      th:selected="${doctor.department != null && doctor.department.id == dept.id}">
+                                  Department Name
+                              </option>
+                          </select>
+                      </div>
+                  </form>
+              </div>
+              <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                  <button type="submit" form="updateDeptForm" class="btn btn-primary">Update Department</button>
+              </div>
+          </div>
+      </div>
   </div>
 
-  <div class="row">
-    <!-- Doctor Profile Card -->
-    <div class="col-md-6 mb-4">
-      <div class="card h-100">
-        <div class="card-header bg-primary text-white">
-          <h5 class="card-title mb-0">Doctor Profile</h5>
-        </div>
-        <div class="card-body">
-          <div class="row mb-3">
-            <div class="col-4">
-              <strong>Full Name:</strong>
-            </div>
-            <div class="col-8" th:text="${doctor.firstName + ' ' + doctor.lastName}">John Doe</div>
+  <!-- Remove Doctor Modal -->
+  <div class="modal fade" id="removeDoctorModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+          <div class="modal-content">
+              <div class="modal-header">
+                  <h5 class="modal-title">Confirm Doctor Removal</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                  <p>Are you sure you want to remove
+                      <strong th:text="${doctor.firstName + ' ' + doctor.lastName}">John Doe</strong>?
+                  </p>
+                  <p class="text-danger">This action cannot be undone and all associated data will be lost.</p>
+              </div>
+              <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                  <form th:action="@{/admin/doctors/{id}/remove(id=${doctor.id})}" method="post">
+                      <button type="submit" class="btn btn-danger">Confirm Removal</button>
+                  </form>
+              </div>
           </div>
-          <div class="row mb-3">
-            <div class="col-4">
-              <strong>Username:</strong>
-            </div>
-            <div class="col-8" th:text="${doctor.user.username}">johndoe</div>
-          </div>
-          <div class="row mb-3">
-            <div class="col-4">
-              <strong>Email:</strong>
-            </div>
-            <div class="col-8" th:text="${doctor.user.email}">johndoe@example.com</div>
-          </div>
-          <div class="row mb-3">
-            <div class="col-4">
-              <strong>Department:</strong>
-            </div>
-            <div class="col-8" th:text="${doctor.department != null ? doctor.department.name : 'Not Assigned'}">Cardiology</div>
-          </div>
-          <div class="row mb-3">
-            <div class="col-4">
-              <strong>Specialization:</strong>
-            </div>
-            <div class="col-8" th:text="${doctor.specialization}">Cardiology</div>
-          </div>
-          <div class="row mb-3">
-            <div class="col-4">
-              <strong>License Number:</strong>
-            </div>
-            <div class="col-8" th:text="${doctor.licenseNumber}">DR12345</div>
-          </div>
-          <div class="row mb-3">
-            <div class="col-4">
-              <strong>Phone Number:</strong>
-            </div>
-            <div class="col-8" th:text="${doctor.phoneNumber}">123-456-7890</div>
-          </div>
-          <div class="row mb-3">
-            <div class="col-4">
-              <strong>Bio:</strong>
-            </div>
-            <div class="col-8" th:text="${doctor.bio}">Doctor biography goes here...</div>
-          </div>
-          <div class="row mb-3">
-            <div class="col-4">
-              <strong>Account Status:</strong>
-            </div>
-            <div class="col-8">
-                                <span class="badge" th:classappend="${doctor.user.enabled ? 'bg-success' : 'bg-danger'}"
-                                      th:text="${doctor.user.enabled ? 'Active' : 'Inactive'}">Active</span>
-            </div>
-          </div>
-        </div>
-        <div class="card-footer">
-          <div class="d-flex justify-content-between">
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editDeptModal">
-              Change Department
-            </button>
-            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#removeDoctorModal">
-              Remove Doctor
-            </button>
-            <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#editDoctorModal" aria-label="Edit Doctor">
-              <i class="bi bi-pencil"></i> Edit Doctor
-            </button>
-          </div>
-        </div>
       </div>
-    </div>
-
-    <!-- Doctor Appointments Card -->
-    <div class="col-md-6 mb-4">
-      <div class="card h-100">
-        <div class="card-header bg-info text-white">
-          <h5 class="card-title mb-0">Recent Appointments</h5>
-        </div>
-        <div class="card-body">
-          <div th:if="${appointments == null || appointments.empty}" class="alert alert-info">
-            No appointments found for this doctor.
-          </div>
-          <div th:if="${appointments != null && !appointments.empty}" class="table-responsive">
-            <table class="table table-striped table-hover">
-              <thead>
-              <tr>
-                <th>Date & Time</th>
-                <th>Patient</th>
-                <th>Status</th>
-              </tr>
-              </thead>
-              <tbody>
-              <tr th:each="appointment : ${appointments}">
-                <td th:text="${#temporals.format(appointment.appointmentTime, 'MMM dd, HH:mm')}">Jan 1, 10:00</td>
-                <td>
-                  <a th:href="@{/admin/patients/{id}(id=${appointment.patient.id})}"
-                     th:text="${appointment.patient.firstName + ' ' + appointment.patient.lastName}">
-                    Jane Smith
-                  </a>
-                </td>
-                <td>
-                                            <span class="badge"
-                                                  th:classappend="${appointment.status == T(com.example.healthflow.model.AppointmentStatus).PENDING ? 'bg-warning' :
-                                                                   appointment.status == T(com.example.healthflow.model.AppointmentStatus).COMPLETED ? 'bg-success' :
-                                                                   appointment.status == T(com.example.healthflow.model.AppointmentStatus).CANCELLED ? 'bg-danger' : 'bg-info'}"
-                                                  th:text="${appointment.status}">
-                                                PENDING
-                                            </span>
-                </td>
-              </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div class="card-footer">
-          <a th:href="@{/admin/appointments?doctorId={id}(id=${doctor.id})}" class="btn btn-info">View All Appointments</a>
-        </div>
-      </div>
-    </div>
   </div>
-</div>
 
-<!-- Change Department Modal -->
-<div class="modal fade" id="editDeptModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Change Department</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <form th:action="@{/admin/doctors/{id}/update-department(id=${doctor.id})}" method="post" id="updateDeptForm">
-          <div class="mb-3">
-            <label for="departmentId" class="form-label">Department</label>
-            <select class="form-select" id="departmentId" name="departmentId" required>
-              <option value="">Select Department</option>
-              <option th:each="dept : ${departments}"
-                      th:value="${dept.id}"
-                      th:text="${dept.name}"
-                      th:selected="${doctor.department != null && doctor.department.id == dept.id}">
-                Department Name
-              </option>
-            </select>
+  <!-- Edit Doctor Modal -->
+  <div class="modal fade" id="editDoctorModal" tabindex="-1">
+      <div class="modal-dialog">
+          <div class="modal-content">
+              <div class="modal-header">
+                  <h5 class="modal-title">Edit Doctor</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <form th:action="@{/admin/doctors/{id}/update(id=${doctor.id})}" method="post">
+                  <div class="modal-body">
+                      <div class="mb-3">
+                          <label for="firstName" class="form-label">First Name</label>
+                          <input type="text" class="form-control" id="firstName" name="firstName"
+                                 th:value="${doctor.firstName}" required>
+                      </div>
+                      <div class="mb-3">
+                          <label for="lastName" class="form-label">Last Name</label>
+                          <input type="text" class="form-control" id="lastName" name="lastName"
+                                 th:value="${doctor.lastName}" required>
+                      </div>
+                      <div class="mb-3">
+                          <label for="specialization" class="form-label">Specialization</label>
+                          <input type="text" class="form-control" id="specialization" name="specialization"
+                                 th:value="${doctor.specialization}" required>
+                      </div>
+                      <div class="mb-3">
+                          <label for="licenseNumber" class="form-label">License Number</label>
+                          <input type="text" class="form-control" id="licenseNumber" name="licenseNumber"
+                                 th:value="${doctor.licenseNumber}" required>
+                      </div>
+                      <div class="mb-3">
+                          <label for="phoneNumber" class="form-label">Phone Number</label>
+                          <input type="tel" class="form-control" id="phoneNumber" name="phoneNumber"
+                                 th:value="${doctor.phoneNumber}">
+                      </div>
+                      <div class="mb-3">
+                          <label for="bio" class="form-label">Bio</label>
+                          <textarea class="form-control" id="bio" name="bio" rows="3"
+                                    th:text="${doctor.bio}"></textarea>
+                      </div>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                      <button type="submit" class="btn btn-primary">Save Changes</button>
+                  </div>
+              </form>
           </div>
-        </form>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" form="updateDeptForm" class="btn btn-primary">Update Department</button>
-      </div>
-    </div>
   </div>
-</div>
 
-<!-- Remove Doctor Modal -->
-<div class="modal fade" id="removeDoctorModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Confirm Doctor Removal</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  <!-- Change Resident Status Modal -->
+  <div class="modal fade" id="editResidentModal" tabindex="-1">
+      <div class="modal-dialog">
+          <div class="modal-content">
+              <div class="modal-header">
+                  <h5 class="modal-title">Change Resident Status</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <form th:action="@{/admin/doctors/{id}/update-resident(id=${doctor.id})}" method="post">
+                  <div class="modal-body">
+                      <div class="mb-3">
+                          <label for="isResident" class="form-label">Resident Status</label>
+                          <select class="form-select" id="isResident" name="isResident" required>
+                              <option value="no" th:selected="${!doctor.isResident()}">No</option>
+                              <option value="yes" th:selected="${doctor.isResident()}">Yes</option>
+                          </select>
+                      </div>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                      <button type="submit" class="btn btn-primary">Save Changes</button>
+                  </div>
+              </form>
+          </div>
       </div>
-      <div class="modal-body">
-        <p>Are you sure you want to remove
-          <strong th:text="${doctor.firstName + ' ' + doctor.lastName}">John Doe</strong>?
-        </p>
-        <p class="text-danger">This action cannot be undone and all associated data will be lost.</p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <form th:action="@{/admin/doctors/{id}/remove(id=${doctor.id})}" method="post">
-          <button type="submit" class="btn btn-danger">Confirm Removal</button>
-        </form>
-      </div>
-    </div>
   </div>
-</div>
-
-<!-- Edit Doctor Modal -->
-<div class="modal fade" id="editDoctorModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Edit Doctor</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  
+  <!-- Upload Profile Image Modal -->
+  <div class="modal fade" id="uploadImageModal" tabindex="-1">
+      <div class="modal-dialog">
+          <div class="modal-content">
+              <div class="modal-header">
+                  <h5 class="modal-title">Upload Profile Image</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <form th:action="@{/admin/doctors/{id}/upload-image(id=${doctor.id})}" method="post" enctype="multipart/form-data">
+                  <div class="modal-body">
+                      <div class="mb-3">
+                          <label for="profileImage" class="form-label">Select Image</label>
+                          <input class="form-control" type="file" id="profileImage" name="image" accept="image/*" required>
+                      </div>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                      <button type="submit" class="btn btn-primary">Upload</button>
+                  </div>
+              </form>
+          </div>
       </div>
-      <form th:action="@{/admin/doctors/{id}/update(id=${doctor.id})}" method="post">
-        <div class="modal-body">
-          <div class="mb-3">
-            <label for="firstName" class="form-label">First Name</label>
-            <input type="text" class="form-control" id="firstName" name="firstName"
-                   th:value="${doctor.firstName}" required>
-          </div>
-          <div class="mb-3">
-            <label for="lastName" class="form-label">Last Name</label>
-            <input type="text" class="form-control" id="lastName" name="lastName"
-                   th:value="${doctor.lastName}" required>
-          </div>
-          <div class="mb-3">
-            <label for="specialization" class="form-label">Specialization</label>
-            <input type="text" class="form-control" id="specialization" name="specialization"
-                   th:value="${doctor.specialization}" required>
-          </div>
-          <div class="mb-3">
-            <label for="licenseNumber" class="form-label">License Number</label>
-            <input type="text" class="form-control" id="licenseNumber" name="licenseNumber"
-                   th:value="${doctor.licenseNumber}" required>
-          </div>
-          <div class="mb-3">
-            <label for="phoneNumber" class="form-label">Phone Number</label>
-            <input type="tel" class="form-control" id="phoneNumber" name="phoneNumber"
-                   th:value="${doctor.phoneNumber}">
-          </div>
-          <div class="mb-3">
-            <label for="bio" class="form-label">Bio</label>
-            <textarea class="form-control" id="bio" name="bio" rows="3"
-                      th:text="${doctor.bio}"></textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Changes</button>
-        </div>
-      </form>
-    </div>
   </div>
-</div>
 
-<footer class="mt-5 py-3 bg-light">
-  <div class="container text-center">
-    <p class="mb-0">© 2025 HealthFlow. All rights reserved.</p>
-  </div>
-</footer>
+  <footer class="mt-5 py-3 bg-light">
+      <div class="container text-center">
+          <p class="mb-0">© 2025 HealthFlow. All rights reserved.</p>
+      </div>
+  </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

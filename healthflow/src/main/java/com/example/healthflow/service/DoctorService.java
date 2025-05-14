@@ -5,6 +5,7 @@ import com.example.healthflow.model.AppointmentStatus;
 import com.example.healthflow.model.Doctor;
 import com.example.healthflow.model.Patient;
 import com.example.healthflow.model.DoctorAvailability;
+
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -18,6 +19,8 @@ public interface DoctorService {
     Doctor getDoctorById(Long id);
     List<Doctor> getAllDoctors();
     List<Doctor> getDoctorsByDepartment(Long departmentId);
+    List<Doctor> getResidentDoctors();
+    List<Doctor> getNonResidentDoctors();
 
     // Department management
     boolean updateDoctorDepartment(Long doctorId, Long departmentId);
@@ -44,4 +47,9 @@ public interface DoctorService {
 
     // Doctor profile management
     Doctor updateDoctorInfo(Doctor doctor);
+    Doctor updateDoctorProfile(Doctor doctor, String profileImage);
+    Doctor updateResidentStatus(Long doctorId, String isResident);
+    
+    // Potential supervisors for future use
+    List<Doctor> getPotentialSupervisors();
 } 

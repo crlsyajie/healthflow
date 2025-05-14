@@ -11,8 +11,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.Principal;
+import java.util.UUID;
 
 // This controller only handles REST API endpoints for doctor profile updates
 @RestController
@@ -68,6 +75,50 @@ public class DoctorProfileController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error changing password: " + e.getMessage());
+        }
+    }
+    
+    @PostMapping("/profile-image")
+    public ResponseEntity<?> uploadProfileImage(@RequestParam("image") MultipartFile file, Principal principal) {
+        try {
+            String username = principal.getName();
+            Doctor doctor = doctorService.getDoctorByUsername(username);
+
+            if (doctor == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Doctor profile not found");
+            }
+
+            // Create directory if it doesn't exist
+            String uploadDir = "uploads/doctor-profiles/";
+            Path uploadPath = Paths.get(uploadDir);
+            
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+
+            // Generate a unique filename
+            String originalFilename = file.getOriginalFilename();
+            String extension = "";
+            if (originalFilename != null && originalFilename.contains(".")) {
+                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            }
+            String filename = UUID.randomUUID().toString() + extension;
+            
+            // Save the file
+            Path filePath = uploadPath.resolve(filename);
+            Files.copy(file.getInputStream(), filePath);
+            
+            // Update doctor profile with the image path
+            doctor = doctorService.updateDoctorProfile(doctor, "/uploads/doctor-profiles/" + filename);
+            
+            return ResponseEntity.ok().body("Profile image uploaded successfully");
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error uploading profile image: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error updating profile: " + e.getMessage());
         }
     }
 }

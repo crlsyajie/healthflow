@@ -28,6 +28,10 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     List<Appointment> findByPatient(Patient patient);
     List<Appointment> findByPatientAndStatus(Patient patient, AppointmentStatus status);
     List<Appointment> findByDoctorIn(List<Doctor> doctors);
+    
+    // Follow-up related queries
+    List<Appointment> findByParentAppointment(Appointment parentAppointment);
+    List<Appointment> findByIsFollowUpTrue();
 
     // Recent appointments
     List<Appointment> findTop5ByOrderByCreatedAtDesc();

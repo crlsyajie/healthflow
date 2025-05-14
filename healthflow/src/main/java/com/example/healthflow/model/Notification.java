@@ -42,6 +42,7 @@ public class Notification {
         APPOINTMENT_UPDATED,
         APPOINTMENT_CANCELLED,
         SYSTEM_NOTIFICATION,
-        USER_MESSAGE
+        USER_MESSAGE,
+        FOLLOW_UP_SCHEDULED
     }
 }

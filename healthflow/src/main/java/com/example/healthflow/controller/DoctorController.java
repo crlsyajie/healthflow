@@ -4,6 +4,7 @@ import com.example.healthflow.model.Appointment;
 import com.example.healthflow.model.AppointmentStatus;
 import com.example.healthflow.model.Doctor;
 import com.example.healthflow.model.Patient;
+import com.example.healthflow.model.Resident;
 import com.example.healthflow.service.DoctorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -229,6 +230,9 @@ public class DoctorController {
             }
 
             model.addAttribute("doctor", doctor);
+            // Add resident status for template rendering
+            model.addAttribute("isResident", doctor.isResident());
+            
             return "doctor/profile";
         } catch (Exception e) {
             e.printStackTrace();

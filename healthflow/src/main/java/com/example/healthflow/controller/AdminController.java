@@ -3,6 +3,8 @@ package com.example.healthflow.controller;
 import com.example.healthflow.model.*;
 import com.example.healthflow.repository.PatientRepository;
 import com.example.healthflow.service.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -10,18 +12,31 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 @Controller
 @RequestMapping("/admin")
 public class AdminController {
+
+    private static final Logger log = LoggerFactory.getLogger(AdminController.class);
 
     @Autowired
     private UserService userService;
@@ -95,20 +110,18 @@ public class AdminController {
     }
 
     @GetMapping("/appointments/{id}")
-    public String viewAppointment(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
-        try {
-            Appointment appointment = appointmentService.getAppointmentById(id);
-            if (appointment == null) {
-                redirectAttributes.addFlashAttribute("error", "Appointment not found");
-                return "redirect:/admin/appointments";
-            }
-
-            model.addAttribute("appointment", appointment);
-            return "admin/appointment-detail";
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Error retrieving appointment: " + e.getMessage());
+    public String viewAppointmentDetail(@PathVariable Long id, Model model) {
+        Appointment appointment = appointmentService.getAppointmentById(id);
+        if (appointment == null) {
             return "redirect:/admin/appointments";
         }
+        
+        // Get any follow-up appointments for this appointment
+        List<Appointment> followUps = appointmentService.getFollowUpAppointments(id);
+        
+        model.addAttribute("appointment", appointment);
+        model.addAttribute("followUps", followUps);
+        return "admin/appointment-detail";
     }
 
     @GetMapping("/appointments/{id}/edit")
@@ -237,6 +250,71 @@ public class AdminController {
         }
 
         return "redirect:/admin/appointments";
+    }
+
+    @PostMapping("/appointments/{id}/follow-up")
+    public String createFollowUp(
+            @PathVariable Long id,
+            @RequestParam String scheduleOption,
+            @RequestParam(required = false) String followUpDate,
+            @RequestParam(required = false) String followUpTime,
+            @RequestParam(required = false) String selectedIntervals,
+            @RequestParam Integer durationMinutes,
+            @RequestParam String reason,
+            @RequestParam(required = false) String notes,
+            RedirectAttributes redirectAttributes) {
+        
+        try {
+            Appointment appointment = appointmentService.getAppointmentById(id);
+            if (appointment == null) {
+                redirectAttributes.addFlashAttribute("error", "Appointment not found.");
+                return "redirect:/admin/appointments";
+            }
+            
+            if ("single".equals(scheduleOption)) {
+                // Create a single follow-up appointment
+                LocalDateTime followUpDateTime = LocalDateTime.parse(followUpDate + "T" + followUpTime);
+                
+                Appointment followUp = appointmentService.createFollowUpAppointment(
+                        id, followUpDateTime, durationMinutes, reason, notes);
+                
+                if (followUp != null) {
+                    redirectAttributes.addFlashAttribute("success", "Follow-up appointment scheduled successfully.");
+                } else {
+                    redirectAttributes.addFlashAttribute("error", "Failed to create follow-up appointment.");
+                }
+            } else {
+                // Create multiple follow-up appointments at regular intervals
+                if (selectedIntervals == null || selectedIntervals.isEmpty()) {
+                    redirectAttributes.addFlashAttribute("error", "No intervals selected for follow-up appointments.");
+                    return "redirect:/admin/appointments/" + id;
+                }
+                
+                // Parse the selected intervals
+                String[] intervalStrings = selectedIntervals.split(",");
+                int[] intervals = new int[intervalStrings.length];
+                for (int i = 0; i < intervalStrings.length; i++) {
+                    intervals[i] = Integer.parseInt(intervalStrings[i]);
+                }
+                
+                // Create the follow-up appointments
+                List<Appointment> followUps = appointmentService.createScheduledFollowUps(
+                        id, intervals, reason, durationMinutes);
+                
+                if (followUps != null && !followUps.isEmpty()) {
+                    redirectAttributes.addFlashAttribute("success", 
+                            followUps.size() + " follow-up appointments scheduled successfully.");
+                } else {
+                    redirectAttributes.addFlashAttribute("error", "Failed to create follow-up appointments.");
+                }
+            }
+            
+            return "redirect:/admin/appointments/" + id;
+        } catch (Exception e) {
+            log.error("Error creating follow-up appointment: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("error", "An error occurred: " + e.getMessage());
+            return "redirect:/admin/appointments/" + id;
+        }
     }
 
     // Patient Management
@@ -584,6 +662,86 @@ public class AdminController {
         return "redirect:/admin/doctors/" + id;
     }
 
+    @PostMapping("/doctors/{id}/update-resident")
+    public String updateDoctorResidentStatus(
+            @PathVariable Long id,
+            @RequestParam String isResident,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            // Validate resident status value
+            if (!"yes".equals(isResident) && !"no".equals(isResident)) {
+                redirectAttributes.addFlashAttribute("error", "Invalid resident status value");
+                return "redirect:/admin/doctors/" + id;
+            }
+
+            Doctor updatedDoctor = doctorService.updateResidentStatus(id, isResident);
+            
+            if (updatedDoctor != null) {
+                redirectAttributes.addFlashAttribute("success", "Resident status updated successfully");
+            } else {
+                redirectAttributes.addFlashAttribute("error", "Failed to update resident status");
+            }
+
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error updating resident status: " + e.getMessage());
+        }
+
+        return "redirect:/admin/doctors/" + id;
+    }
+    
+    @PostMapping("/doctors/{id}/upload-image")
+    public String uploadDoctorProfileImage(
+            @PathVariable Long id,
+            @RequestParam("image") MultipartFile file,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            Doctor doctor = doctorService.getDoctorById(id);
+            if (doctor == null) {
+                redirectAttributes.addFlashAttribute("error", "Doctor not found");
+                return "redirect:/admin/doctors";
+            }
+            
+            if (file.isEmpty()) {
+                redirectAttributes.addFlashAttribute("error", "Please select a file to upload");
+                return "redirect:/admin/doctors/" + id;
+            }
+
+            // Create directory if it doesn't exist
+            String uploadDir = "uploads/doctor-profiles/";
+            Path uploadPath = Paths.get(uploadDir);
+            
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+
+            // Generate a unique filename
+            String originalFilename = file.getOriginalFilename();
+            String extension = "";
+            if (originalFilename != null && originalFilename.contains(".")) {
+                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            }
+            String filename = UUID.randomUUID().toString() + extension;
+            
+            // Save the file
+            Path filePath = uploadPath.resolve(filename);
+            Files.copy(file.getInputStream(), filePath);
+            
+            // Update doctor profile with the image path
+            doctor = doctorService.updateDoctorProfile(doctor, "/uploads/doctor-profiles/" + filename);
+            
+            redirectAttributes.addFlashAttribute("success", "Profile image uploaded successfully");
+
+        } catch (IOException e) {
+            redirectAttributes.addFlashAttribute("error", "Error uploading profile image: " + e.getMessage());
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error updating profile: " + e.getMessage());
+        }
+
+        return "redirect:/admin/doctors/" + id;
+    }
+
     // Department Management
     @GetMapping("/departments")
     public String departments(Model model) {
@@ -663,6 +821,41 @@ public class AdminController {
         return "admin/reports";
     }
 
+    // Patient Monitor
+    @GetMapping("/patient-monitor")
+    public String patientMonitor(Model model) {
+        // Get all patients for the monitoring board
+        List<Patient> patients = patientService.getAllPatients();
+        
+        // Populate last appointment for each patient
+        for (Patient patient : patients) {
+            if (patient != null) {
+                List<Appointment> patientAppointments = appointmentService.getAppointmentsByPatient(patient);
+                if (patientAppointments != null && !patientAppointments.isEmpty()) {
+                    // Sort by appointment time, latest first
+                    patientAppointments.sort(Comparator.comparing(Appointment::getAppointmentTime).reversed());
+                    patient.setLastAppointment(patientAppointments.get(0));
+                } else {
+                    // Explicitly set null for patients with no appointments
+                    patient.setLastAppointment(null);
+                }
+            }
+        }
+        
+        model.addAttribute("patients", patients);
+        
+        // Count appointments by status
+        long pendingCount = appointmentService.getPendingAppointments().size();
+        long completedCount = appointmentService.getCompletedAppointments().size();
+        long cancelledCount = appointmentService.getCancelledAppointments().size();
+        
+        model.addAttribute("pendingCount", pendingCount);
+        model.addAttribute("completedCount", completedCount);
+        model.addAttribute("cancelledCount", cancelledCount);
+        
+        return "admin/patient-monitor";
+    }
+
     @GetMapping("/api/reports/appointment-trends")
     @ResponseBody
     public ResponseEntity<?> appointmentTrends() {
@@ -726,5 +919,230 @@ public class AdminController {
         int count = appointmentService.markAllNotificationsAsRead();
         redirectAttributes.addFlashAttribute("success", count + " notifications marked as read");
         return "redirect:/admin/notifications";
+    }
+
+    // Add these new endpoints for appointment reporting and authorization settings
+    
+    @GetMapping("/appointments/print")
+    public String printAppointments(
+            @RequestParam(required = false) Long doctorId,
+            @RequestParam(required = false) Long departmentId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            Model model) {
+        
+        // Get appointments based on filters (same logic as in appointments method)
+        List<Appointment> appointments;
+
+        if (doctorId != null) {
+            Doctor doctor = doctorService.getDoctorById(doctorId);
+            appointments = appointmentService.getAppointmentsByDoctor(doctor);
+        } else if (departmentId != null) {
+            appointments = appointmentService.getAppointmentsByDepartment(departmentId);
+        } else if (date != null) {
+            appointments = appointmentService.getAppointmentsByDate(date);
+        } else {
+            appointments = appointmentService.getAllAppointments();
+        }
+        
+        model.addAttribute("appointments", appointments);
+        model.addAttribute("currentDate", LocalDate.now());
+        model.addAttribute("printTitle", "Appointments Report");
+        
+        // Add filter descriptions for the report heading
+        if (doctorId != null) {
+            Doctor doctor = doctorService.getDoctorById(doctorId);
+            if (doctor != null) {
+                model.addAttribute("filterDescription", "Doctor: " + doctor.getFirstName() + " " + doctor.getLastName());
+            }
+        } else if (departmentId != null) {
+            Department department = departmentService.getDepartmentById(departmentId);
+            if (department != null) {
+                model.addAttribute("filterDescription", "Department: " + department.getName());
+            }
+        } else if (date != null) {
+            model.addAttribute("filterDescription", "Date: " + date);
+        } else {
+            model.addAttribute("filterDescription", "All Appointments");
+        }
+        
+        return "admin/print/appointments-report";
+    }
+    
+    @GetMapping("/patient/{id}/history/print")
+    public String printPatientHistory(@PathVariable Long id, Model model) {
+        Patient patient = patientService.getPatientById(id);
+        if (patient == null) {
+            return "redirect:/admin/patients";
+        }
+        
+        List<Appointment> appointments = appointmentService.getAppointmentsByPatient(patient);
+        
+        model.addAttribute("patient", patient);
+        model.addAttribute("appointments", appointments);
+        model.addAttribute("currentDate", LocalDate.now());
+        model.addAttribute("printTitle", "Patient History Report");
+        
+        return "admin/print/patient-history-report";
+    }
+    
+    @GetMapping("/export-csv")
+    public void exportCsv(
+            @RequestParam(required = false) Long doctorId,
+            @RequestParam(required = false) Long departmentId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            HttpServletResponse response) throws IOException {
+        
+        // Get appointments based on filters
+        List<Appointment> appointments;
+
+        if (doctorId != null) {
+            Doctor doctor = doctorService.getDoctorById(doctorId);
+            appointments = appointmentService.getAppointmentsByDoctor(doctor);
+        } else if (departmentId != null) {
+            appointments = appointmentService.getAppointmentsByDepartment(departmentId);
+        } else if (date != null) {
+            appointments = appointmentService.getAppointmentsByDate(date);
+        } else {
+            appointments = appointmentService.getAllAppointments();
+        }
+        
+        // Set response headers
+        String filename = "appointments_export_" + LocalDate.now() + ".csv";
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+        
+        // Write CSV data
+        try (PrintWriter writer = response.getWriter()) {
+            // Write headers
+            writer.println("ID,Patient,Doctor,Department,Date,Time,Duration,Status,Reason");
+            
+            // Write data rows
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+            
+            for (Appointment appointment : appointments) {
+                StringBuilder sb = new StringBuilder();
+                sb.append(appointment.getId()).append(",");
+                sb.append(getCsvSafe(appointment.getPatient().getFirstName() + " " + appointment.getPatient().getLastName())).append(",");
+                sb.append(getCsvSafe(appointment.getDoctor().getFirstName() + " " + appointment.getDoctor().getLastName())).append(",");
+                sb.append(getCsvSafe(appointment.getDoctor().getDepartment() != null ? appointment.getDoctor().getDepartment().getName() : "N/A")).append(",");
+                
+                LocalDateTime dateTime = appointment.getAppointmentTime();
+                sb.append(dateTime.format(dateFormatter)).append(",");
+                sb.append(dateTime.format(timeFormatter)).append(",");
+                
+                sb.append(appointment.getDurationMinutes()).append(",");
+                sb.append(appointment.getStatus()).append(",");
+                sb.append(getCsvSafe(appointment.getReason()));
+                
+                writer.println(sb.toString());
+            }
+        }
+    }
+    
+    private String getCsvSafe(String value) {
+        if (value == null) {
+            return "";
+        }
+        return "\"" + value.replace("\"", "\"\"") + "\"";
+    }
+    
+    @GetMapping("/authorization-settings")
+    public String authorizationSettings(Model model) {
+        // Load current settings
+        model.addAttribute("termsAndConditions", loadTermsAndConditions());
+        model.addAttribute("ndaText", loadNdaText());
+        model.addAttribute("users", userService.findAll());
+        
+        return "admin/authorization-settings";
+    }
+    
+    @PostMapping("/authorization-settings/terms")
+    public String updateTermsAndConditions(
+            @RequestParam String termsContent,
+            RedirectAttributes redirectAttributes) {
+        
+        try {
+            // Save terms and conditions to file
+            Path filePath = Paths.get("config/terms-and-conditions.txt");
+            Files.createDirectories(filePath.getParent());
+            Files.writeString(filePath, termsContent);
+            
+            redirectAttributes.addFlashAttribute("success", "Terms and conditions updated successfully");
+        } catch (IOException e) {
+            redirectAttributes.addFlashAttribute("error", "Error updating terms and conditions: " + e.getMessage());
+        }
+        
+        return "redirect:/admin/authorization-settings";
+    }
+    
+    @PostMapping("/authorization-settings/nda")
+    public String updateNda(
+            @RequestParam String ndaContent,
+            RedirectAttributes redirectAttributes) {
+        
+        try {
+            // Save NDA text to file
+            Path filePath = Paths.get("config/nda.txt");
+            Files.createDirectories(filePath.getParent());
+            Files.writeString(filePath, ndaContent);
+            
+            redirectAttributes.addFlashAttribute("success", "NDA template updated successfully");
+        } catch (IOException e) {
+            redirectAttributes.addFlashAttribute("error", "Error updating NDA template: " + e.getMessage());
+        }
+        
+        return "redirect:/admin/authorization-settings";
+    }
+    
+    @PostMapping("/authorization-settings/user/{id}/toggle")
+    public String toggleUserStatus(
+            @PathVariable Long id,
+            RedirectAttributes redirectAttributes) {
+        
+        try {
+            User user = userService.findById(id);
+            if (user == null) {
+                redirectAttributes.addFlashAttribute("error", "User not found");
+                return "redirect:/admin/authorization-settings";
+            }
+            
+            // Toggle user enabled status
+            user.setEnabled(!user.isEnabled());
+            userService.saveUser(user);
+            
+            String status = user.isEnabled() ? "enabled" : "disabled";
+            redirectAttributes.addFlashAttribute("success", "User " + user.getUsername() + " " + status + " successfully");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error updating user status: " + e.getMessage());
+        }
+        
+        return "redirect:/admin/authorization-settings";
+    }
+    
+    private String loadTermsAndConditions() {
+        try {
+            Path filePath = Paths.get("config/terms-and-conditions.txt");
+            if (Files.exists(filePath)) {
+                return Files.readString(filePath);
+            } else {
+                return "Default Terms and Conditions. Please update this text.";
+            }
+        } catch (IOException e) {
+            return "Error loading terms and conditions.";
+        }
+    }
+    
+    private String loadNdaText() {
+        try {
+            Path filePath = Paths.get("config/nda.txt");
+            if (Files.exists(filePath)) {
+                return Files.readString(filePath);
+            } else {
+                return "Default Non-Disclosure Agreement Template. Please update this text.";
+            }
+        } catch (IOException e) {
+            return "Error loading NDA template.";
+        }
     }
 } 

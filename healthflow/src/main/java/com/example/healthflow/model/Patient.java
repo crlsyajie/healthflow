@@ -32,4 +32,16 @@ public class Patient {
     private String phoneNumber;
 
     private String address;
+
+    // This is a transient field that will be populated by the service layer
+    @Transient
+    private Appointment lastAppointment;
+
+    public Appointment getLastAppointment() {
+        return lastAppointment;
+    }
+
+    public void setLastAppointment(Appointment lastAppointment) {
+        this.lastAppointment = lastAppointment;
+    }
 }

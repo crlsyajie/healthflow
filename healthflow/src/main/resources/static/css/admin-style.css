@@ -1,0 +1,224 @@
+/* Admin Panel Shared Styles */
+body {
+    background-color: #f8f9fa;
+}
+
+/* Sidebar */
+.sidebar {
+    min-height: 100vh;
+    background-color: #212529;
+    color: white;
+}
+
+.nav-link {
+    color: rgba(255, 255, 255, 0.8);
+    padding: 0.75rem 1rem;
+    border-radius: 0.25rem;
+    margin: 0.1rem 0.5rem;
+}
+
+.nav-link:hover {
+    color: white;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-link.active {
+    background-color: #6c757d;
+    color: white;
+}
+
+/* Cards */
+.card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    margin-bottom: 1.5rem;
+    border: none;
+}
+
+.card-header {
+    border-radius: 0.5rem 0.5rem 0 0 !important;
+    font-weight: 500;
+}
+
+.card-footer {
+    border-radius: 0 0 0.5rem 0.5rem !important;
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+/* Hover effects */
+.hover-card {
+    transition: transform 0.2s;
+}
+
+.hover-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Tables */
+.table-responsive {
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    border-top: none;
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+/* Forms */
+.filter-form {
+    background-color: #f1f1f1;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Buttons */
+.btn {
+    border-radius: 0.25rem;
+    padding: 0.375rem 0.75rem;
+    font-weight: 500;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* Patient Monitor */
+.monitor-header {
+    background: linear-gradient(to right, #4e73df, #224abe);
+    color: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.patient-card {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    transition: transform 0.2s;
+    margin-bottom: 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.patient-card:hover {
+    transform: translateY(-5px);
+}
+
+.patient-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(0,0,0,.125);
+    background-color: #f8f9fa;
+}
+
+.patient-body {
+    padding: 1rem;
+}
+
+.patient-footer {
+    border-top: 1px solid rgba(0,0,0,.125);
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    background-color: #f8f9fa;
+}
+
+/* Status colors */
+.stats-pending {
+    background: linear-gradient(to right, #ffc107, #e0a800);
+}
+
+.stats-completed {
+    background: linear-gradient(to right, #28a745, #1e7e34);
+}
+
+.stats-cancelled {
+    background: linear-gradient(to right, #dc3545, #bd2130);
+}
+
+/* Status badges */
+.appointment-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    border-radius: 0 0 0 0.5rem;
+}
+
+.appointment-pending {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.appointment-scheduled {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.appointment-completed {
+    background-color: #28a745;
+    color: white;
+}
+
+.appointment-cancelled {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* Audit Log details */
+.log-details {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    padding: 1.5rem;
+}
+
+.detail-label {
+    font-weight: bold;
+    color: #495057;
+}
+
+.json-viewer {
+    background-color: #f8f9fa;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    font-family: monospace;
+    white-space: pre-wrap;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Auto refresh timer display */
+.refresh-timer {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+#refreshCountdown {
+    font-weight: bold;
+}
+
+/* Pagination */
+.pagination {
+    margin-bottom: 0;
+}
+
+.page-link {
+    color: #4e73df;
+}
+
+.page-item.active .page-link {
+    background-color: #4e73df;
+    border-color: #4e73df;
+} 

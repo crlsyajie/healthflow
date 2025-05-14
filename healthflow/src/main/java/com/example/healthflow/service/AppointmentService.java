@@ -7,6 +7,7 @@ import com.example.healthflow.model.Notification;
 import com.example.healthflow.model.Patient;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +21,8 @@ public interface AppointmentService {
     // Filtered queries
     List<Appointment> getTodayAppointments();
     List<Appointment> getPendingAppointments();
+    List<Appointment> getCompletedAppointments();
+    List<Appointment> getCancelledAppointments();
     List<Appointment> getRecentAppointments(int limit);
     List<Appointment> getAppointmentsByDoctor(Doctor doctor);
     List<Appointment> getAppointmentsByPatient(Patient patient);
@@ -40,4 +43,11 @@ public interface AppointmentService {
     List<Notification> getAllNotifications();
     boolean markNotificationAsRead(Long id);
     int markAllNotificationsAsRead();
+    
+    // Follow-up appointment methods
+    Appointment createFollowUpAppointment(Long parentAppointmentId, LocalDateTime followUpTime, 
+                                         Integer durationMinutes, String reason, String notes);
+    List<Appointment> getFollowUpAppointments(Long parentAppointmentId);
+    List<Appointment> createScheduledFollowUps(Long appointmentId, int[] intervalDays, 
+                                              String reason, Integer durationMinutes);
 }

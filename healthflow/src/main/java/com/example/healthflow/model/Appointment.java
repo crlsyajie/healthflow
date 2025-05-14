@@ -3,6 +3,8 @@ package com.example.healthflow.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "appointments")
@@ -36,9 +38,34 @@ public class Appointment {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+    
+    // Fields for follow-up appointments
+    @ManyToOne
+    @JoinColumn(name = "parent_appointment_id")
+    private Appointment parentAppointment;
+    
+    @OneToMany(mappedBy = "parentAppointment", cascade = CascadeType.ALL)
+    private List<Appointment> followUpAppointments = new ArrayList<>();
+    
+    @Column(name = "is_follow_up")
+    private Boolean isFollowUp = false;
+    
+    @Column(name = "follow_up_interval_days")
+    private Integer followUpIntervalDays;
 
     @PrePersist
     public void prePersist() {
         createdAt = LocalDateTime.now();
+    }
+    
+    // Convenience methods for follow-up appointments
+    public void addFollowUpAppointment(Appointment followUp) {
+        followUp.setParentAppointment(this);
+        followUp.setIsFollowUp(true);
+        followUpAppointments.add(followUp);
+    }
+    
+    public boolean hasFollowUps() {
+        return followUpAppointments != null && !followUpAppointments.isEmpty();
     }
 }

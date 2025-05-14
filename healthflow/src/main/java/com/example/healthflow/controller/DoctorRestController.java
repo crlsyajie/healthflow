@@ -5,6 +5,7 @@ import com.example.healthflow.model.AppointmentStatus;
 import com.example.healthflow.model.Doctor;
 import com.example.healthflow.model.Patient;
 import com.example.healthflow.model.DoctorAvailability;
+import com.example.healthflow.model.Resident;
 import com.example.healthflow.dto.AppointmentDTO;
 import com.example.healthflow.service.DoctorService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,9 +31,20 @@ public class DoctorRestController {
     private DoctorService doctorService;
 
     @GetMapping("/profile")
-    public ResponseEntity<Doctor> getProfile(Authentication authentication) {
+    public ResponseEntity<Map<String, Object>> getProfile(Authentication authentication) {
         Doctor doctor = doctorService.getDoctorByUsername(authentication.getName());
-        return ResponseEntity.ok(doctor);
+        Map<String, Object> response = new HashMap<>();
+        
+        // Set default resident status to "no" if null
+        if (doctor.getIsResident() == null) {
+            doctor.setIsResident("no");
+            doctor = doctorService.updateDoctorInfo(doctor);
+        }
+        
+        response.put("doctor", doctor);
+        response.put("isResident", doctor.isResident());
+        
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/appointments/today")

@@ -69,17 +69,36 @@
                 </div>
                 <div class="card-body">
                     <div class="text-center mb-4">
-                        <div class="avatar-placeholder bg-light rounded-circle mx-auto mb-3" style="width: 128px; height: 128px; display: flex; align-items: center; justify-content: center; font-size: 36px;">
+                        <div th:if="${doctor.profileImage != null}" class="mb-3">
+                            <img th:src="${doctor.profileImage}" class="rounded-circle" style="width: 128px; height: 128px; object-fit: cover;" alt="Profile Image">
+                        </div>
+                        <div th:if="${doctor.profileImage == null}" class="avatar-placeholder bg-light rounded-circle mx-auto mb-3" style="width: 128px; height: 128px; display: flex; align-items: center; justify-content: center; font-size: 36px;">
                             <span th:text="${#strings.substring(doctor.firstName, 0, 1) + #strings.substring(doctor.lastName, 0, 1)}">JS</span>
                         </div>
                         <h5 th:text="${'Dr. ' + doctor.firstName + ' ' + doctor.lastName}">Dr. John Smith</h5>
                         <p class="text-muted" th:text="${doctor.specialization}">Cardiology</p>
+                        <div class="badge bg-info mb-2">
+                            Resident Status: <span th:text="${doctor.isResident() ? 'Yes' : 'No'}">No</span>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <h6 class="text-muted mb-2">Account Details</h6>
                         <p class="mb-1"><strong>Username:</strong> <span th:text="${doctor.user.username}">jsmith</span></p>
                         <p class="mb-1"><strong>Email:</strong> <span th:text="${doctor.user.email}">john.smith@example.com</span></p>
                         <p class="mb-1"><strong>License #:</strong> <span th:text="${doctor.licenseNumber}">MD12345</span></p>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h6 class="text-muted mb-2">Profile Image</h6>
+                        <form id="profileImageForm" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label for="profileImage" class="form-label">Select your profile image</label>
+                                <input class="form-control" type="file" id="profileImage" name="image" accept="image/*">
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">Upload Image</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -213,6 +232,42 @@
                 },
                 error: function() {
                     $('#errorAlert').show();
+                    setTimeout(function() {
+                        $('#errorAlert').fadeOut();
+                    }, 3000);
+                }
+            });
+        });
+
+        // Profile image form submission
+        $('#profileImageForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            const fileInput = $('#profileImage')[0];
+            
+            if (fileInput.files.length === 0) {
+                alert('Please select an image to upload.');
+                return;
+            }
+            
+            formData.append('image', fileInput.files[0]);
+            
+            $.ajax({
+                url: '/api/doctor/profile-image',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    $('#successAlert').text('Profile image uploaded successfully!').show();
+                    setTimeout(function() {
+                        $('#successAlert').fadeOut();
+                        location.reload();
+                    }, 2000);
+                },
+                error: function() {
+                    $('#errorAlert').text('Failed to upload profile image. Please try again.').show();
                     setTimeout(function() {
                         $('#errorAlert').fadeOut();
                     }, 3000);
