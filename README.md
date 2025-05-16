@@ -91,6 +91,25 @@ spring.datasource.password=YOUR_ROOT_PASSWORD
 ```
 Replace `YOUR_ROOT_PASSWORD` with the password you set during MySQL installation.
 
+
+### Step 5: Create healthflow database
+1. Type in terminal mysql -u root -p
+2. Type root password
+3. Type CREATE DATABASE healthflow;
+4. Type SHOW DATABASES;
+5. EXIT;
+6. Type mysql -u root -p healthflow < healthflow.sql
+7. Type root password
+8. Type in terminal mysql -u root -p
+9. Type root password
+10.Type USE healthflow;
+11. Check if tables will show SHOW TABLES;
+12. EXIT;
+
+### Step 6: To run 
+1. Go to HealthflowApplication.java
+2. Click Run or righ click mouse then click run java
+
 ## Part 2: Java Development Environment Setup
 
 ### Step 1: Install Java Development Kit (JDK)
