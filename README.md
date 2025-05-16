@@ -82,7 +82,7 @@ SHOW DATABASES;
 You should see `healthflow` in the list.
 
 ### Step 4: Configure Application Properties
-1. Open `healthflow/src/main/resources/application.properties`
+1. Open `healthflow/src/main/resources/application.properties`and open healthflow/target/classes/application.properties
 2. Update the MySQL configuration with your root password:
 ```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/healthflow?useSSL=false&serverTimezone=UTC
