@@ -13,5 +13,4 @@ public class HealthflowApplication {
     public static void main(String[] args) {
         SpringApplication.run(HealthflowApplication.class, args);
     }
-
 }
